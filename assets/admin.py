@@ -1,5 +1,5 @@
 from django.contrib import admin
-from assetman.models import Asset
+from assets.models import Asset
 
 # Register your models here.
 
