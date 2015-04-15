@@ -1,6 +1,16 @@
 from django.contrib import admin
-from assets.models import Asset
+from models import Asset
+
+class AssetAdmin(admin.ModelAdmin):
+    """
+    AssetAdmin
+    """
+
+    list_display = ('name', 'serial', 'owner', 'active', 'purchase_date')
+    search_fields = ['name', 'serial']
+
+
 
 # Register your models here.
 
-admin.site.register(Asset)
+admin.site.register(Asset, AssetAdmin)

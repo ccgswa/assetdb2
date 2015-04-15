@@ -5,8 +5,8 @@ from django.db import models
 
 class Asset(models.Model):
     name = models.CharField(max_length=30, primary_key=True, unique=True)
-    manufacturer = models.CharField(max_length=50, null=True)
-    model = models.CharField(max_length=50, null=True)
+    manufacturer = models.CharField(max_length=50, blank=True, null=True)
+    model = models.CharField(max_length=50, blank=True, null=True)
     serial = models.CharField(max_length=50, unique=True)
 
     LOCATION_CHOICES = (
@@ -19,11 +19,11 @@ class Asset(models.Model):
     )
     location = models.CharField(max_length=4, choices=LOCATION_CHOICES, default='none' )
 
-    owner = models.CharField(null=True, max_length=50)
-    purchase_date = models.DateField(null=True)
-    created_date = models.DateField(null=True)
-    mac = models.CharField(max_length=50, unique=True, null=True)
-    wmac = models.CharField(max_length=50, unique=True, null=True)
-    bmac = models.CharField(max_length=50, unique=True, null=True)
+    owner = models.CharField( max_length=50, blank=True, null=True)
+    purchase_date = models.DateField(blank=True, null=True)
+    created_date = models.DateField(blank=True, null=True)
+    mac = models.CharField(max_length=50, unique=True, blank=True, null=True)
+    wmac = models.CharField(max_length=50, unique=True, blank=True, null=True)
+    bmac = models.CharField(max_length=50, unique=True, blank=True, null=True)
     active = models.BooleanField(default=True)
 
