@@ -28,6 +28,9 @@ class Asset(models.Model):
     bmac = models.CharField(max_length=50, unique=True, blank=True, null=True)
     active = models.BooleanField(default=True)
 
+    def __str__(self):
+        return self.name
+
 
 class AssetHistory(models.Model):
     asset = models.ForeignKey(Asset)
@@ -50,3 +53,6 @@ class AssetHistory(models.Model):
     )
     transfer = models.CharField(max_length=4, choices=TRANSFER_CHOICES, default='int')
     notes = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return self.incident
