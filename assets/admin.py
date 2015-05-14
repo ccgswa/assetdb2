@@ -13,10 +13,15 @@ class AssetAdmin(admin.ModelAdmin):
     """
 
     list_display = ('name', 'serial', 'owner', 'active', 'purchase_date')
-    search_fields = ['name', 'serial']
+    readonly_fields = ['created_date', 'created_by']
+    search_fields = ['name', 'serial','wmac']
     inlines = [
         HistoryInline,
     ]
+    # Custom save to allow setting of uneditable created_by field
+    def save_model(self, request, obj, form, change):
+        obj.created_by = request.user
+        obj.save()
 
 # Register your models here.
 

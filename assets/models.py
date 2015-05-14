@@ -1,10 +1,20 @@
 import datetime
 from django.db import models
+from django.contrib.auth.models import User
 
-# Create your models here.
+# TODO Complete Asset model specification.
 
-#TODO Complete Asset model specification.
-class Asset(models.Model):
+# Abstract class inherited by all models.
+class AbstractClass(models.Model):
+    created_by = models.ForeignKey(User, editable=False)
+    created_date = models.DateTimeField(auto_now_add = True)
+#    edited_by = models.ForeignKey(User)
+#    edited_date = models.DateTimeField(auto_now_add = True)
+    class Meta:
+        abstract = True
+
+
+class Asset(AbstractClass):
     name = models.CharField(max_length=30, primary_key=True, unique=True)
     manufacturer = models.CharField(max_length=50, blank=True, null=True)
     model = models.CharField(max_length=50, blank=True, null=True)
@@ -22,7 +32,6 @@ class Asset(models.Model):
 
     owner = models.CharField( max_length=50, blank=True, null=True)
     purchase_date = models.DateField(blank=True, null=True)
-    created_date = models.DateField(blank=True, null=True)
     mac = models.CharField(max_length=50, unique=True, blank=True, null=True)
     wmac = models.CharField(max_length=50, unique=True, blank=True, null=True)
     bmac = models.CharField(max_length=50, unique=True, blank=True, null=True)
@@ -32,7 +41,7 @@ class Asset(models.Model):
         return self.name
 
 
-class AssetHistory(models.Model):
+class AssetHistory(AbstractClass):
     asset = models.ForeignKey(Asset)
 
     INCIDENT_CHOICES = (
@@ -44,6 +53,7 @@ class AssetHistory(models.Model):
         ('disp', 'Disposed'),
     )
     incident = models.CharField(max_length=4, choices=INCIDENT_CHOICES, default='gen')
+
     recipient = models.CharField(max_length=50, blank=True, null=True)
 
     TRANSFER_CHOICES = (
@@ -55,4 +65,4 @@ class AssetHistory(models.Model):
     notes = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return self.incident
+        return self.notes
