@@ -4,17 +4,17 @@ from django.contrib.auth.models import User
 
 # TODO Complete Asset model specification.
 
-# Abstract class inherited by all models.
-class AbstractClass(models.Model):
-    created_by = models.ForeignKey(User, editable=False)
-    created_date = models.DateTimeField(auto_now_add = True)
+# Abstract class inherited by all models. NO LONGER NEEDED AFTER IMPLEMENTING REVERSION
+#class AbstractClass(models.Model):
+#    created_by = models.ForeignKey(User, editable=False)
+#    created_date = models.DateTimeField(auto_now_add = True)
 #    edited_by = models.ForeignKey(User)
 #    edited_date = models.DateTimeField(auto_now_add = True)
-    class Meta:
-        abstract = True
+#    class Meta:
+#        abstract = True
 
 
-class Asset(AbstractClass):
+class Asset(models.Model):
     name = models.CharField(max_length=30, primary_key=True, unique=True)
     manufacturer = models.CharField(max_length=50, blank=True, null=True)
     model = models.CharField(max_length=50, blank=True, null=True)
@@ -23,9 +23,9 @@ class Asset(AbstractClass):
     LOCATION_CHOICES = (
         ('none', 'None'),
         ('ccgs', 'CCGS: Main Campus'),
-        ('koor', 'Kooringal Campus'),
-        ('dmg', 'Damaged'),
-        ('disp', 'Disposed'),
+        ('kooringal', 'Kooringal Campus'),
+        ('damaged', 'Damaged'),
+        ('disposed', 'Disposed'),
         ('lost', 'Lost or Stolen')
     )
     location = models.CharField(max_length=4, choices=LOCATION_CHOICES, default='none')
@@ -41,7 +41,7 @@ class Asset(AbstractClass):
         return self.name
 
 
-class AssetHistory(AbstractClass):
+class AssetHistory(models.Model):
     asset = models.ForeignKey(Asset)
 
     INCIDENT_CHOICES = (

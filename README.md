@@ -17,3 +17,4 @@ Non-functional Requirements:
 
 - Scan barcode to bring up iPad
 - Linking passwords to AD
+- Attempt auto-complete of owner based on staff ID or student ID
