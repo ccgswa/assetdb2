@@ -2,7 +2,9 @@ import datetime
 from django.db import models
 from django.contrib.auth.models import User
 
-# TODO Complete Asset model specification.
+# TODO Confirm Asset model specification.
+
+# TODO increase CharField max_length to 200
 
 # Abstract class inherited by all models. NO LONGER NEEDED AFTER IMPLEMENTING REVERSION
 #class AbstractClass(models.Model):
@@ -28,13 +30,19 @@ class Asset(models.Model):
         ('disposed', 'Disposed'),
         ('lost', 'Lost or Stolen')
     )
-    location = models.CharField(max_length=4, choices=LOCATION_CHOICES, default='none')
+    # Merge with location (legacy) on import
+    location = models.CharField(max_length=50, choices=LOCATION_CHOICES, default='none')
 
     owner = models.CharField( max_length=50, blank=True, null=True)
     purchase_date = models.DateField(blank=True, null=True)
-    mac = models.CharField(max_length=50, unique=True, blank=True, null=True)
-    wmac = models.CharField(max_length=50, unique=True, blank=True, null=True)
-    bmac = models.CharField(max_length=50, unique=True, blank=True, null=True)
+#   invoice_numbers = Is this required? May need to update function requirements. Ask Geoff.
+    wired_mac = models.CharField(max_length=50, unique=True, blank=True, null=True)
+    wireless_mac = models.CharField(max_length=50, unique=True, blank=True, null=True)
+    bluetooth_mac = models.CharField(max_length=50, unique=True, blank=True, null=True)
+    far_asset = models.BooleanField(default=False)
+    far_cost = models.CharField(max_length=50, blank=True, null=True)
+    ed_cost = models.CharField(max_length=50, blank=True, null=True)
+    warranty_period = models.CharField(max_length=50, blank=True, null=True)
     active = models.BooleanField(default=True)
 
     def __str__(self):

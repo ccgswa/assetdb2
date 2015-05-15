@@ -17,6 +17,7 @@ class AssetResource(resources.ModelResource):
     class Meta:
         model = Asset
 
+#TODO Override default template to enable import/export buttons etc.
 
 class AssetAdmin(reversion.VersionAdmin, ImportExportModelAdmin):
     """
