@@ -10,12 +10,17 @@ import reversion
 class HistoryInline(admin.StackedInline):
     model = AssetHistory
     extra = 1
+    verbose_name = 'Asset History'
+    verbose_name_plural = 'Asset History'
+    can_delete = False
 
 # For importing and exporting Asset data
 class AssetResource(resources.ModelResource):
 
     class Meta:
         model = Asset
+
+
 
 #TODO Override default template to enable import/export buttons etc.
 
@@ -26,13 +31,33 @@ class AssetAdmin(reversion.VersionAdmin, ImportExportModelAdmin):
 
     list_display = ('name', 'serial', 'owner', 'active', 'purchase_date')
 #    readonly_fields = ['created_date', 'created_by'] #DEPRECATED. USING REVERSION
-    search_fields = ['name', 'serial','wmac']
+    search_fields = ['name', 'serial', 'wireless_mac']
     inlines = [
         HistoryInline,
     ]
 
     # Integrate ImportExport functionality for AssetAdmin
     resource_class = AssetResource
+    pass
+
+
+# For importing and exporting Asset History data
+class AssetHistoryResource(resources.ModelResource):
+
+    class Meta:
+        model = AssetHistory
+
+
+class AssetHistoryAdmin(reversion.VersionAdmin, ImportExportModelAdmin):
+    """
+    AssetHistoryAdmin
+    """
+
+    list_display = ('asset', 'incident', 'notes')
+    search_fields = ['asset', 'notes']
+
+    # Integrate ImportExport functionality for AssetAdmin
+    resource_class = AssetHistoryResource
     pass
 
     # Custom save to allow setting of read only created_by field. NO LONGER NEEDED AFTER IMPLEMENTING REVERSION
@@ -42,4 +67,4 @@ class AssetAdmin(reversion.VersionAdmin, ImportExportModelAdmin):
 
 
 admin.site.register(Asset, AssetAdmin)
-admin.site.register(AssetHistory)
+admin.site.register(AssetHistory, AssetHistoryAdmin)
