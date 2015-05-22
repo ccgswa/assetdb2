@@ -13,6 +13,7 @@ class HistoryInline(admin.StackedInline):
     verbose_name = 'Asset History'
     verbose_name_plural = 'Asset History'
     can_delete = False
+    template = 'admin/assets/assethistory/edit_inline/stacked.html'
 
 # For importing and exporting Asset data
 class AssetResource(resources.ModelResource):
@@ -28,6 +29,8 @@ class AssetAdmin(reversion.VersionAdmin, ImportExportModelAdmin):
     """
     AssetAdmin
     """
+#   For custom change_form template name
+#   change_form_template = 'admin/assets/asset/change_form.html'
 
     list_display = ('name', 'serial', 'owner', 'active', 'purchase_date')
 #    readonly_fields = ['created_date', 'created_by'] #DEPRECATED. USING REVERSION

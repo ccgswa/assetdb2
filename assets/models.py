@@ -51,23 +51,23 @@ class AssetHistory(models.Model):
     asset = models.ForeignKey(Asset)
 
     INCIDENT_CHOICES = (
-        ('General', 'General Note'),
-        ('Deploy', 'Deploy to Staff/Student'),
-        ('Return', 'Return to ICT'),
-        ('Lost', 'Lost or Stolen'),
-        ('Decommission', 'Decommission'),
-        ('Dispose', 'Dispose'),
+        ('general', 'General Note'),
+        ('deploy', 'Deploy to Staff/Student'),
+        ('return', 'Return to ICT'),
+        ('lost', 'Lost or Stolen'),
+        ('decommission', 'Decommission'),
+        ('dispose', 'Dispose'),
     )
-    incident = models.CharField(max_length=200, choices=INCIDENT_CHOICES, default='General')
+    incident = models.CharField(max_length=200, choices=INCIDENT_CHOICES, default='general')
 
     recipient = models.CharField(max_length=200, blank=True, null=True)
 
     TRANSFER_CHOICES = (
-        ('Internal', 'Internal'),
-        ('Incoming', 'Incoming'),
-        ('Outgoing', 'Outgoing')
+        ('internal', 'Internal'),
+        ('incoming', 'Incoming'),
+        ('outgoing', 'Outgoing')
     )
-    transfer = models.CharField(max_length=200, choices=TRANSFER_CHOICES, default='Internal')
+    transfer = models.CharField(max_length=200, choices=TRANSFER_CHOICES, default='internal')
     notes = models.TextField(blank=True, null=True)
 
     def __str__(self):
