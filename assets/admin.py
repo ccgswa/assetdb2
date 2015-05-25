@@ -5,8 +5,10 @@ from import_export.admin import ImportExportModelAdmin
 import reversion
 
 #TODO Explore further customisations https://docs.djangoproject.com/en/1.8/intro/tutorial02/#customizing-your-application-s-templates
+#TODO Edit history inline using IBM tutorial http://www.ibm.com/developerworks/opensource/library/os-django-admin/index.html
 
-# Inline for displaying asset history on Asset admin page
+
+# Inline for displaying asset history on Asset admin page. OVERRIDDEN BY CUSTOM TEMPLATE TAG
 class HistoryInline(admin.StackedInline):
     model = AssetHistory
     extra = 1
@@ -15,6 +17,7 @@ class HistoryInline(admin.StackedInline):
     can_delete = False
     template = 'admin/assets/assethistory/edit_inline/stacked.html'
 
+
 # For importing and exporting Asset data
 class AssetResource(resources.ModelResource):
 
@@ -22,8 +25,8 @@ class AssetResource(resources.ModelResource):
         model = Asset
 
 
+# TODO Override default template to enable import/export buttons etc.
 
-#TODO Override default template to enable import/export buttons etc.
 
 class AssetAdmin(reversion.VersionAdmin, ImportExportModelAdmin):
     """
@@ -33,11 +36,13 @@ class AssetAdmin(reversion.VersionAdmin, ImportExportModelAdmin):
 #   change_form_template = 'admin/assets/asset/change_form.html'
 
     list_display = ('name', 'serial', 'owner', 'active', 'purchase_date')
-#    readonly_fields = ['created_date', 'created_by'] #DEPRECATED. USING REVERSION
+#   readonly_fields = ['created_date', 'created_by'] #DEPRECATED. USING REVERSION
     search_fields = ['name', 'serial', 'wireless_mac']
-    inlines = [
-        HistoryInline,
-    ]
+
+# OVERRIDDEN BY CUSTOM TEMPLATE TAG
+#    inlines = [
+#        HistoryInline,
+#    ]
 
     # Integrate ImportExport functionality for AssetAdmin
     resource_class = AssetResource

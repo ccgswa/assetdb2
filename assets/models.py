@@ -15,7 +15,7 @@ from django.contrib.auth.models import User
 
 
 class Asset(models.Model):
-    name = models.CharField(max_length=200, primary_key=True, unique=True)
+    name = models.CharField(max_length=200, db_index=True, unique=True)
     manufacturer = models.CharField(max_length=200, blank=True, null=True)
     model = models.CharField(max_length=200, blank=True, null=True)
     serial = models.CharField('Serial Number', max_length=200, unique=True)
@@ -30,14 +30,13 @@ class Asset(models.Model):
     )
     # Merge with location (legacy) on import
     location = models.CharField(max_length=200, choices=LOCATION_CHOICES, default='none')
-
     owner = models.CharField(max_length=200, blank=True, null=True)
     purchase_date = models.DateField(blank=True, null=True)
 #   invoice_numbers = Is this required? May need to update function requirements. Ask Geoff.
     wired_mac = models.CharField('Wired MAC', max_length=200, unique=True, blank=True, null=True)
     wireless_mac = models.CharField('Wireless MAC', max_length=200, unique=True, blank=True, null=True)
     bluetooth_mac = models.CharField('Bluetooth MAC', max_length=200, unique=True, blank=True, null=True)
-    far_asset = models.BooleanField('FAR Cost', default=False)
+    far_asset = models.BooleanField('FAR Asset', default=False)
     far_cost = models.CharField(max_length=200, blank=True, null=True)
     ed_cost = models.CharField('Educational Cost', max_length=200, blank=True, null=True)
     warranty_period = models.CharField(max_length=200, blank=True, null=True)
