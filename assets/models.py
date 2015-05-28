@@ -4,14 +4,14 @@ from django.contrib.auth.models import User
 
 # TODO Confirm Asset model specification.
 
-# Abstract class inherited by all models. NO LONGER NEEDED AFTER IMPLEMENTING REVERSION
+
+# Abstract class to track model changes
 #class AbstractClass(models.Model):
 #    created_by = models.ForeignKey(User, editable=False)
-#    created_date = models.DateTimeField(auto_now_add = True)
-#    edited_by = models.ForeignKey(User)
-#    edited_date = models.DateTimeField(auto_now_add = True)
+#    created_date = models.DateTimeField(auto_now_add=True)
+
 #    class Meta:
-#        abstract = True
+#       abstract = True
 
 
 class Asset(models.Model):
@@ -32,7 +32,7 @@ class Asset(models.Model):
     location = models.CharField(max_length=200, choices=LOCATION_CHOICES, default='none')
     owner = models.CharField(max_length=200, blank=True, null=True)
     purchase_date = models.DateField(blank=True, null=True)
-#   invoice_numbers = Is this required? May need to update function requirements. Ask Geoff.
+#   invoice_numbers = Is this required? May need to update functional requirements. Ask Geoff.
     wired_mac = models.CharField('Wired MAC', max_length=200, unique=True, blank=True, null=True)
     wireless_mac = models.CharField('Wireless MAC', max_length=200, unique=True, blank=True, null=True)
     bluetooth_mac = models.CharField('Bluetooth MAC', max_length=200, unique=True, blank=True, null=True)
@@ -48,6 +48,10 @@ class Asset(models.Model):
 
 class AssetHistory(models.Model):
     asset = models.ForeignKey(Asset)
+    created_by = models.ForeignKey(User, editable=False, related_name="history_created")
+    created_date = models.DateTimeField(auto_now_add=True)
+    edited_by = models.ForeignKey(User, editable=False, null=True, related_name="history_edited")
+    edited_date = models.DateTimeField(auto_now=True, null=True)
 
     INCIDENT_CHOICES = (
         ('general', 'General Note'),
@@ -56,6 +60,7 @@ class AssetHistory(models.Model):
         ('lost', 'Lost or Stolen'),
         ('decommission', 'Decommission'),
         ('dispose', 'Dispose'),
+        ('other', 'Other'),
     )
     incident = models.CharField(max_length=200, choices=INCIDENT_CHOICES, default='general')
 
@@ -71,3 +76,4 @@ class AssetHistory(models.Model):
 
     def __str__(self):
         return self.notes
+

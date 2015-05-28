@@ -39,7 +39,7 @@ class AssetAdmin(reversion.VersionAdmin, ImportExportModelAdmin):
 #   readonly_fields = ['created_date', 'created_by'] #DEPRECATED. USING REVERSION
     search_fields = ['name', 'serial', 'wireless_mac']
 
-# OVERRIDDEN BY CUSTOM TEMPLATE TAG
+# Overridden by display_asset_history tag
 #    inlines = [
 #        HistoryInline,
 #    ]
