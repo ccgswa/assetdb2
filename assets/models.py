@@ -47,7 +47,7 @@ class Asset(models.Model):
 
 
 class AssetHistory(models.Model):
-    asset = models.ForeignKey(Asset)
+    asset = models.ForeignKey(Asset, editable=False)
     created_by = models.ForeignKey(User, editable=False, related_name="history_created")
     created_date = models.DateTimeField(auto_now_add=True)
     edited_by = models.ForeignKey(User, editable=False, null=True, related_name="history_edited")

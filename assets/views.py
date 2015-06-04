@@ -7,3 +7,7 @@ from django.shortcuts import render
 def browse(request):
 
     return render(request,'assets/browse.html',{})
+
+def decommission_asset(request):
+
+    return render(request,'assets/')

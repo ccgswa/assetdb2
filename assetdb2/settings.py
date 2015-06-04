@@ -36,6 +36,7 @@ INSTALLED_APPS  = {
     'django.contrib.staticfiles',
     'import_export',
     'reversion',
+    'django_object_actions',
     'assets'
 }
 
@@ -58,7 +59,7 @@ WSGI_APPLICATION = 'assetdb2.wsgi.application'
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Australia/Perth'
 
 USE_I18N = True
 
@@ -81,6 +82,18 @@ STATICFILES_DIRS = (
 #    'django.template.loaders.app_directories.Loader',
 #)
 
-TEMPLATE_DIRS = (
-    os.path.join(BASE_DIR, "templates"),
-)
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
