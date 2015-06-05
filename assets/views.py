@@ -1,13 +1,13 @@
 from django.shortcuts import render
+from django.http import HttpResponseRedirect, Http404
 
-# Create your views here.
+from .forms import AssetDecommissionForm
+from .models import Asset
 
-#TODO Create a view for the Asset object. https://docs.djangoproject.com/en/1.8/intro/tutorial03/
+
+# TODO Create a view for the Asset object. https://docs.djangoproject.com/en/1.8/intro/tutorial03/
+
 
 def browse(request):
 
-    return render(request,'assets/browse.html',{})
-
-def decommission_asset(request):
-
-    return render(request,'assets/')
+    return render(request, 'browse.html', {})

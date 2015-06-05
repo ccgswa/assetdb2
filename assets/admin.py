@@ -4,6 +4,8 @@ from models import Asset, AssetHistory
 from import_export import resources
 from import_export.admin import ImportExportModelAdmin
 from django_object_actions import DjangoObjectActions, takes_instance_or_queryset
+from .forms import AssetDecommissionForm
+from django.shortcuts import render
 import reversion
 
 # TODO Explore further customisations https://docs.djangoproject.com/en/1.8/intro/tutorial02/#customizing-your-application-s-templates
@@ -57,31 +59,47 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
     # Integrate ImportExport functionality for AssetAdmin
     resource_class = AssetResource
 
-    # Django Admin action. Uses Django-object-actions decorator to make available in change_form template.
+    # Django Admin action to decommission an asset.
+    # The django-object-actions decorator makes it available in change_form template.
     @takes_instance_or_queryset
     def decommission(self, request, queryset):
-        for asset in queryset:
-            asset.location = 'damaged'
-            asset.owner = '%s - Damaged' % asset.owner
-            asset.active = False
-            ah = AssetHistory(asset=asset,
-                              created_by=request.user,
-                              incident='decommission',
-                              recipient='Repair',
-                              transfer='outgoing',
-                              notes='Processed for repair with Winthrop.')
-            asset.save()
-            ah.save()
-        rows_updated = len(queryset)
-        if rows_updated == 1:
-            message_bit = "%s was" % queryset[0].name
-        else:
-            message_bit = "%s assets were" % rows_updated
-        self.message_user(request, "%s successfully decommissioned." % message_bit, level=messages.SUCCESS)
 
+        # Check that we've submitted the decommission form
+        if 'decommission_asset' in request.POST:
+            # Create form object with submitted data
+            form = AssetDecommissionForm(request.POST)
+            if form.is_valid():
+                # Use validated data to decommission selected assets
+                for asset in queryset:
+                    asset.location = form.cleaned_data['location']
+                    asset.owner = '%s - Damaged' % asset.owner
+                    asset.active = False
+                    ah = AssetHistory(asset=asset,
+                                      created_by=request.user,
+                                      incident='decommission',
+                                      recipient=form.cleaned_data['recipient'],
+                                      transfer='outgoing',
+                                      notes=form.cleaned_data['notes'])
+                    asset.save()
+                    ah.save()
+                # Create message to user based on how many assets were updated
+                rows_updated = len(queryset)
+                if rows_updated == 1:
+                    message_bit = "%s was" % queryset[0].name
+                else:
+                    message_bit = "%s assets were" % rows_updated
+                self.message_user(request, "%s successfully decommissioned." % message_bit, level=messages.SUCCESS)
+                return
+        # For requests other than POST
+        else:
+            # Create a new form
+            form = AssetDecommissionForm()
+        # Render the empty form on a new page passing selected objects and form object fields as dictionaries
+        return render(request, 'admin/assets/decommission.html', {'objects': queryset, 'form': form})
+
+    # Names for django action tools
     decommission.short_description = "Decommission selected assets"
     decommission.label = "Decommission"
-
     pass
 
 
