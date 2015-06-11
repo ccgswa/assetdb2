@@ -16,9 +16,9 @@ from django.contrib.auth.models import User
 
 class Asset(models.Model):
     name = models.CharField(max_length=200, db_index=True, unique=True)
-    manufacturer = models.CharField(max_length=200, blank=True, null=True)
-    model = models.CharField(max_length=200, blank=True, null=True)
-    serial = models.CharField('Serial Number', max_length=200, unique=True)
+    manufacturer = models.CharField(max_length=200, blank=True)
+    model = models.CharField(max_length=200, blank=True)
+    serial = models.CharField('Serial Number', max_length=200, unique=True, blank=True)
 
     LOCATION_CHOICES = (
         ('none', 'None'),
@@ -30,16 +30,16 @@ class Asset(models.Model):
     )
     # Merge with location (legacy) on import
     location = models.CharField(max_length=200, choices=LOCATION_CHOICES, default='none')
-    owner = models.CharField(max_length=200, blank=True, null=True)
-    purchase_date = models.DateField(blank=True, null=True)
+    owner = models.CharField(max_length=200, blank=True)
+    purchase_date = models.DateField(null=True)
 #   invoice_numbers = Is this required? May need to update functional requirements. Ask Geoff.
-    wired_mac = models.CharField('Wired MAC', max_length=200, unique=True, blank=True, null=True)
-    wireless_mac = models.CharField('Wireless MAC', max_length=200, unique=True, blank=True, null=True)
-    bluetooth_mac = models.CharField('Bluetooth MAC', max_length=200, unique=True, blank=True, null=True)
+    wired_mac = models.CharField('Wired MAC', max_length=200, unique=True, blank=True)
+    wireless_mac = models.CharField('Wireless MAC', max_length=200, unique=True, blank=True)
+    bluetooth_mac = models.CharField('Bluetooth MAC', max_length=200, unique=True, blank=True)
     far_asset = models.BooleanField('FAR Asset', default=False)
-    far_cost = models.CharField(max_length=200, blank=True, null=True)
-    ed_cost = models.CharField('Educational Cost', max_length=200, blank=True, null=True)
-    warranty_period = models.CharField(max_length=200, blank=True, null=True)
+    far_cost = models.CharField(max_length=200, blank=True)
+    ed_cost = models.CharField('Educational Cost', max_length=200, blank=True)
+    warranty_period = models.CharField(max_length=200, blank=True)
     active = models.BooleanField(default=True)
 
     def __str__(self):
@@ -55,7 +55,8 @@ class AssetHistory(models.Model):
 
     INCIDENT_CHOICES = (
         ('general', 'General Note'),
-        ('deploy', 'Deploy to Staff/Student'),
+        ('deploy_staff', 'Deploy to Staff'),
+        ('deploy_student', 'Deploy to Student'),
         ('return', 'Return to ICT'),
         ('lost', 'Lost or Stolen'),
         ('decommission', 'Decommission'),
@@ -64,7 +65,7 @@ class AssetHistory(models.Model):
     )
     incident = models.CharField(max_length=200, choices=INCIDENT_CHOICES, default='general')
 
-    recipient = models.CharField(max_length=200, blank=True, null=True)
+    recipient = models.CharField(max_length=200, blank=True)
 
     TRANSFER_CHOICES = (
         ('internal', 'Internal'),
@@ -72,7 +73,7 @@ class AssetHistory(models.Model):
         ('outgoing', 'Outgoing')
     )
     transfer = models.CharField(max_length=200, choices=TRANSFER_CHOICES, default='internal')
-    notes = models.TextField(blank=True, null=True)
+    notes = models.TextField(blank=True)
 
     def __str__(self):
         return self.notes

@@ -1,5 +1,4 @@
 from django import forms
-# from django.forms import ModelForm
 from assets.models import AssetHistory
 
 
@@ -9,7 +8,7 @@ class AssetDecommissionForm(forms.Form):
     notes = forms.CharField(label='Notes', max_length=100)
 
 
-class AssetHistoryForm(forms.ModelForm):
+class AssetHistoryForm(forms.BaseModelForm):
     class Meta:
         model = AssetHistory
         fields = ['incident', 'recipient', 'transfer', 'notes']

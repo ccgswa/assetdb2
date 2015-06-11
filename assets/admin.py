@@ -1,3 +1,5 @@
+from django.db import models
+from django import forms
 from django.contrib import admin
 from django.contrib import messages
 from models import Asset, AssetHistory
@@ -9,25 +11,34 @@ from django.shortcuts import render
 import reversion
 
 # TODO Explore further customisations https://docs.djangoproject.com/en/1.8/intro/tutorial02/#customizing-your-application-s-templates
-# TODO Edit history inline using IBM tutorial http://www.ibm.com/developerworks/opensource/library/os-django-admin/index.html
 
-# TODO Implement Django Admin Actions for decommission
-# https://docs.djangoproject.com/en/1.8/ref/contrib/admin/actions/
-# OPTIONAL: http://stackoverflow.com/questions/2805701/is-there-a-way-to-get-custom-django-admin-actions-to-appear-on-the-change-view
-
-# TODO Impelement django-object-actions to display admin actions on change_form
 # TODO Add "Edit" button to toggle 'readonly' attribute for certain fields in change_form.
 
 # TODO Override default template to enable import/export buttons etc.
 
+
 # Inline for displaying asset history on Asset admin page. OVERRIDDEN BY CUSTOM TEMPLATE TAG
 class HistoryInline(admin.StackedInline):
     model = AssetHistory
-    extra = 1
     verbose_name = 'Asset History'
     verbose_name_plural = 'Asset History'
     can_delete = False
     template = 'admin/assets/assethistory/edit_inline/stacked.html'
+    fields = (('incident', 'transfer'), 'recipient', 'notes')
+    extra = 1
+
+    formfield_overrides = {
+        models.TextField: {'widget': forms.Textarea(
+                           attrs={'rows': 1,
+                                  'cols': 100,
+                                  'style': 'height: 2em;'})},
+    }
+
+    def get_queryset(self, request):
+        """Alter the queryset to return no existing entries (only the extra!!)"""
+        # Get the existing queryset, then empty it.
+        qs = super(HistoryInline, self).get_queryset(request)
+        return qs.none()
 
 
 # For importing and exporting Asset data
@@ -64,38 +75,68 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
     @takes_instance_or_queryset
     def decommission(self, request, queryset):
 
+        # The user cancelled. Return to the change list.
+        if 'cancel' in request.POST:
+            self.message_user(request, 'Decommission cancelled.', level=messages.ERROR)
+            return
+
         # Check that we've submitted the decommission form
-        if 'decommission_asset' in request.POST:
+        elif 'decommission_asset' in request.POST:
             # Create form object with submitted data
             form = AssetDecommissionForm(request.POST)
             if form.is_valid():
+
+                # Prepare message string variables
+                rows_updated = len(queryset)
+                already_active = 0
+                error_bit = ""
+
                 # Use validated data to decommission selected assets
                 for asset in queryset:
-                    asset.location = form.cleaned_data['location']
-                    asset.owner = '%s - Damaged' % asset.owner
-                    asset.active = False
-                    ah = AssetHistory(asset=asset,
-                                      created_by=request.user,
-                                      incident='decommission',
-                                      recipient=form.cleaned_data['recipient'],
-                                      transfer='outgoing',
-                                      notes=form.cleaned_data['notes'])
-                    asset.save()
-                    ah.save()
-                # Create message to user based on how many assets were updated
-                rows_updated = len(queryset)
+                    if asset.active:
+                        asset.location = form.cleaned_data['location']
+                        asset.owner = '%s - Damaged' % asset.owner
+                        asset.active = False
+                        ah = AssetHistory(asset=asset,
+                                          created_by=request.user,
+                                          incident='decommission',
+                                          recipient=form.cleaned_data['recipient'],
+                                          transfer='outgoing',
+                                          notes=form.cleaned_data['notes'])
+                        asset.save()
+                        ah.save()
+                    else:
+                        already_active += 1
+                        if already_active == 1:
+                            error_bit += asset.name
+                        else:
+                            error_bit += ", %s" % asset.name
+
+                rows_updated -= already_active
+
+                # Pluralize error string
+                if already_active == 1:
+                    error_bit += " was already deactivated."
+                elif already_active > 1:
+                    error_bit += " were already deactivated."
+                else:
+                    error_bit = ""
+
+                # Construct message to user based on how many assets were updated
                 if rows_updated == 1:
                     message_bit = "%s was" % queryset[0].name
                 else:
                     message_bit = "%s assets were" % rows_updated
-                self.message_user(request, "%s successfully decommissioned." % message_bit, level=messages.SUCCESS)
+                self.message_user(request, "%s successfully decommissioned. %s" % (message_bit, error_bit), level=messages.SUCCESS)
                 return
-        # For requests other than POST
+
+        # We've submitted a different form (i.e. change list/form). Go to the decommission form.
         else:
-            # Create a new form
+            # Create a new decommission form
             form = AssetDecommissionForm()
-        # Render the empty form on a new page passing selected objects and form object fields as dictionaries
-        return render(request, 'admin/assets/decommission.html', {'objects': queryset, 'form': form})
+        # Render the empty form on a new page passing selected assets and form object fields as dictionaries
+        return render(request, 'admin/assets/decommission.html',
+                      {'objects': queryset, 'form': form})
 
     # Names for django action tools
     decommission.short_description = "Decommission selected assets"

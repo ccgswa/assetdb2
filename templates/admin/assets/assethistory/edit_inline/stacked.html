@@ -2,7 +2,7 @@
 
 
 
-{% load i18n admin_urls admin_static asset_extras %}
+{% load i18n admin_urls admin_static %}
 
 
 
@@ -16,8 +16,6 @@
 
 {% for inline_admin_form in inline_admin_formset %}
 
-    {# This if statement skips rendering forms for pre-existing objects. Only allows rendering of the 'extra' formset #}
-{#  {% if not inline_admin_form.original %}  #}
 
     <div class="inline-related{% if inline_admin_form.original or inline_admin_form.show_url %} has_original{% endif %}{% if forloop.last %} empty-form last-related{% endif %}" id="{{ inline_admin_formset.formset.prefix }}-{% if not forloop.last %}{{ forloop.counter0 }}{% else %}empty{% endif %}">
 
@@ -35,21 +33,17 @@
 
     </div>
 
- {# {% endif %} #}
 
 {% endfor %}
 
 
-
-</div>
-
-
 {% load asset_extras %}
 
-{% block after_field_sets %}
     {% if object_id %}{% display_asset_history object_id %}{% endif %}
-{% endblock %}
 
+
+
+</div>
 
 
 {# Comment out the below code to remove "Add another [modelname]" button #}

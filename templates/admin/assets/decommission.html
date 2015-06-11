@@ -4,15 +4,17 @@
     <form action="" method="post">
 
         {% csrf_token %}
-        <input type="hidden" name="action" value="decommission">
-        <input type="hidden" name="decommission_asset" value="yes">
+
+        <h2>Decommission the following Assets</h2>
 
         <div>
             {{ form }}
-            <input type="submit" class="default" style="float: none" value="Decommission">
+            <input type="hidden" name="action" value="decommission" />
+            <input type="submit" name="decommission_asset" value="Decommission" style="color: #FF3333;" /> {# Add class="default" to look the same as admin #}
+            <input type="submit" name="cancel" value="Cancel" />
         </div>
 
-        <h2>Decommission the following Assets</h2>
+
 
         <ul>
             {% for object in objects %}
