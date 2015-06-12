@@ -2,8 +2,6 @@ __author__ = 'gnolan'
 
 from django import template
 from assets import models
-from assets.forms import AssetHistoryForm
-from django.forms.models import inlineformset_factory
 
 register = template.Library()
 
