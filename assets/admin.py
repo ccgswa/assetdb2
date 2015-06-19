@@ -43,6 +43,7 @@ class HistoryInline(admin.StackedInline):
         return qs.none()
 
 
+
 # For importing and exporting Asset data
 class AssetResource(resources.ModelResource):
 
@@ -54,19 +55,20 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
     """
     AssetAdmin
     """
-#   For custom change_form template name
+#   For custom change_form template (i.e. override title etc)
 #   change_form_template = 'admin/assets/asset/change_form.html'
+    change_list_template = 'admin/assets/asset/change_list.html'
 
     form = AssetAdminForm
 
-
+    search_fields = ['name', 'serial', 'wireless_mac']
     list_display = ('name', 'serial', 'owner', 'active', 'purchase_date')
 #   readonly_fields = ['created_date', 'created_by'] # Don't appear on change_form page. DEPRECATED. USING REVERSION
-    search_fields = ['name', 'serial', 'wireless_mac']
     fieldsets = (
         (None, {
-            'fields': (('name', 'owner', 'location', 'active'),
-                       ('serial', 'manufacturer', 'model'),
+            'fields': (('name', 'owner', 'active'),
+                       ('serial', 'location', 'spec_location'),
+                       ('manufacturer', 'model'),
                        ('wireless_mac', 'wired_mac', 'bluetooth_mac'))
         }),
         ('Financial', {
@@ -76,11 +78,9 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
 
     )
 
-
     # save_on_top = True
     actions = ['decommission', 'deploy']
     objectactions = ('decommission', 'deploy', )
-
 
     inlines = [
         HistoryInline,
@@ -237,6 +237,15 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
     deploy.short_description = "Deploy selected assets"
     deploy.label = "Deploy"
 
+    # Custom save to set created_by for AssetHistory inline instances
+    def save_formset(self, request, form, formset, change):
+        instances = formset.save(commit=False)
+        for instance in instances:
+            instance.created_by = request.user
+            instance.save()
+        formset.save_m2m()
+
+
     pass
 
 
@@ -257,13 +266,13 @@ class AssetHistoryAdmin(reversion.VersionAdmin, ImportExportModelAdmin):
 
     # Integrate ImportExport functionality for AssetAdmin
     resource_class = AssetHistoryResource
+
+    # Custom save to allow setting of read only created_by field.
+    def save_model(self, request, obj, form, change):
+        obj.created_by = request.user
+        obj.save()
+
     pass
-
-    # Custom save to allow setting of read only created_by field. NO LONGER NEEDED AFTER IMPLEMENTING REVERSION
-#    def save_model(self, request, obj, form, change):
-#        obj.created_by = request.user
-#        obj.save()
-
 
 admin.site.register(Asset, AssetAdmin)
 admin.site.register(AssetHistory, AssetHistoryAdmin)

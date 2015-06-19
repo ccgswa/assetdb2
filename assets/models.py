@@ -13,6 +13,7 @@ from django.contrib.auth.models import User
 #    class Meta:
 #       abstract = True
 
+# TODO https://docs.djangoproject.com/en/1.8/ref/validators/ to add validators to prevent entering commas
 
 class Asset(models.Model):
     name = models.CharField(max_length=200, db_index=True, unique=True)
@@ -22,17 +23,19 @@ class Asset(models.Model):
 
     LOCATION_CHOICES = (
         ('none', 'None'),
-        ('ccgs', 'CCGS: Main Campus'),
-        ('kooringal', 'Kooringal Campus'),
+        ('ccgs', 'Senior School'),
+        ('prep', 'Prep School'),
+        ('kooringal', 'Kooringal'),
         ('damaged', 'Damaged'),
         ('disposed', 'Disposed'),
         ('lost', 'Lost or Stolen')
     )
     # Merge with location (legacy) on import
     location = models.CharField(max_length=200, choices=LOCATION_CHOICES, default='none')
+    spec_location = models.CharField('Year/Dept/Room', max_length=200, blank=True)
     owner = models.CharField(max_length=200, blank=True)
     purchase_date = models.DateField(null=True)
-#   invoice_numbers = Is this required? May need to update functional requirements. Ask Geoff.
+    invoices = models.CharField('Invoice Numbers', max_length=200, blank=True)
     wired_mac = models.CharField('Wired MAC', max_length=200, unique=True, blank=True)
     wireless_mac = models.CharField('Wireless MAC', max_length=200, unique=True, blank=True)
     bluetooth_mac = models.CharField('Bluetooth MAC', max_length=200, unique=True, blank=True)
