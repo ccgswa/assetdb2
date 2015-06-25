@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 from django import forms
 from django.contrib import admin
 from django.contrib import messages
@@ -13,8 +13,6 @@ import reversion
 # TODO Explore further customisations https://docs.djangoproject.com/en/1.8/intro/tutorial02/#customizing-your-application-s-templates
 
 # TODO Add "Edit" button to toggle 'readonly' attribute for certain fields in change_form.
-
-# TODO Override default template to enable import/export buttons etc.
 
 # TODO Add CSS and JQuery to admin classes using the Media inner class https://docs.djangoproject.com/en/dev/ref/contrib/admin/#modeladmin-asset-definitions
 
@@ -122,8 +120,15 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
                                           recipient=form.cleaned_data['recipient'],
                                           transfer='outgoing',
                                           notes=form.cleaned_data['notes'])
-                        asset.save()
-                        ah.save()
+
+                        # Save model changes and create reversion instance
+                        with transaction.atomic(), reversion.create_revision():
+                            asset.save()
+                            ah.save()
+                            reversion.set_user(request.user)
+                            reversion.set_comment('Decommissioned Recipient: %s Notes: %s' %
+                                                  (form.cleaned_data['recipient'],
+                                                   form.cleaned_data['notes']))
                     else:
                         already_active += 1
                         if already_active == 1:
@@ -204,8 +209,13 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
                                       notes='Deployed to %s as replacement for %s' % (form.cleaned_data['recipient'],
                                                                                       form.cleaned_data['replacing']))
 
-                    asset.save()
-                    ah.save()
+                    # Save model changes and create reversion instance
+                    with transaction.atomic(), reversion.create_revision():
+                        asset.save()
+                        ah.save()
+                        reversion.set_user(request.user)
+                        reversion.set_comment('Deployed to %s as replacement for %s' % (form.cleaned_data['recipient'],
+                                                                                        form.cleaned_data['replacing']))
 
                 rows_updated -= deactivated
 
@@ -244,7 +254,6 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
             instance.created_by = request.user
             instance.save()
         formset.save_m2m()
-
 
     pass
 
