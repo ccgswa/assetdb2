@@ -3,7 +3,7 @@ from django import forms
 from django.contrib import admin
 from django.contrib import messages
 from models import Asset, AssetHistory
-from import_export import resources
+from import_export import resources, fields, widgets
 from import_export.admin import ImportExportModelAdmin
 from django_object_actions import DjangoObjectActions, takes_instance_or_queryset
 from .forms import AssetDecommissionForm,AssetDeploymentForm, AssetAdminForm
@@ -41,9 +41,11 @@ class HistoryInline(admin.StackedInline):
         return qs.none()
 
 
-
 # For importing and exporting Asset data
 class AssetResource(resources.ModelResource):
+    # Excel dates are in floating point format. Accommodate to prevent import errors.
+    # See https://github.com/django-import-export/django-import-export/issues/201 for excel date widget. Try that!
+    purchase_date = fields.Field(column_name='purchase_date', widget=widgets.DateWidget(format='%d/%m/%Y'))
 
     class Meta:
         model = Asset
@@ -53,6 +55,13 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
     """
     AssetAdmin
     """
+
+    # Insert custom CSS
+    class Media:
+        css = {
+            'all': ('assets/css/history.css',)
+        }
+
 #   For custom change_form template (i.e. override title etc)
 #   change_form_template = 'admin/assets/asset/change_form.html'
     change_list_template = 'admin/assets/asset/change_list.html'
@@ -75,6 +84,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
         }),
 
     )
+
 
     # save_on_top = True
     actions = ['decommission', 'deploy']

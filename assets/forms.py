@@ -3,6 +3,7 @@ from assets.models import Asset
 
 
 class AssetAdminForm(forms.ModelForm):
+
     class Meta:
         model = Asset
         fields = '__all__'

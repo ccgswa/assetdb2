@@ -1,13 +1,13 @@
-<div class="note">
+<div>
 
 {% for asset_history in asset_history %}
-
-    <div class="noteHeader">
-        <span class="noteCreator">{{ asset_history.created_by }}</span>
-        <span class="noteDate floatRight">on {{ asset_history.created_date }}</span>
+    <div class="history">
+        <div class="history-header">
+            <span class="history-creator">{{ asset_history.created_by }}</span>
+            <span class="history-date">on {{ asset_history.created_date }}</span>
+        </div>
+        <div class="history-content">{{ asset_history.notes }}</div>
     </div>
-    <div class="noteContent noteType4">{{ asset_history.notes }}</div>
-
 
 {% endfor %}
 
