@@ -37,6 +37,7 @@ INSTALLED_APPS  = {
     'import_export',
     'reversion',
     'django_object_actions',
+    'tablib',
     'assets'
 }
 

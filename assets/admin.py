@@ -9,6 +9,7 @@ from django_object_actions import DjangoObjectActions, takes_instance_or_queryse
 from .forms import AssetDecommissionForm,AssetDeploymentForm, AssetAdminForm
 from django.shortcuts import render
 import reversion
+from widgets import ExcelDateWidget
 
 # TODO Explore further customisations https://docs.djangoproject.com/en/1.8/intro/tutorial02/#customizing-your-application-s-templates
 
@@ -45,7 +46,8 @@ class HistoryInline(admin.StackedInline):
 class AssetResource(resources.ModelResource):
     # Excel dates are in floating point format. Accommodate to prevent import errors.
     # See https://github.com/django-import-export/django-import-export/issues/201 for excel date widget. Try that!
-    purchase_date = fields.Field(column_name='purchase_date', widget=widgets.DateWidget(format='%d/%m/%Y'))
+    # widget=widgets.DateWidget(format='%d/%m/%Y') ?
+    # purchase_date = fields.Field(column_name='purchase_date', widget=ExcelDateWidget('%d/%m/%Y'))
 
     class Meta:
         model = Asset
@@ -115,7 +117,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
 
                 # Prepare message string variables
                 rows_updated = len(queryset)
-                already_active = 0
+                currently_inactive = 0
                 error_bit = ""
 
                 # Use validated data to decommission selected assets
@@ -140,28 +142,33 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
                                                   (form.cleaned_data['recipient'],
                                                    form.cleaned_data['notes']))
                     else:
-                        already_active += 1
-                        if already_active == 1:
+                        currently_inactive += 1
+                        if currently_inactive == 1:
                             error_bit += asset.name
                         else:
                             error_bit += ", %s" % asset.name
 
-                rows_updated -= already_active
-
-                # Pluralize error string
-                if already_active == 1:
-                    error_bit += " was already deactivated."
-                elif already_active > 1:
-                    error_bit += " were already deactivated."
-                else:
-                    error_bit = ""
+                rows_updated -= currently_inactive
 
                 # Construct message to user based on how many assets were updated
-                if rows_updated == 1:
-                    message_bit = "%s was" % queryset[0].name
+                if rows_updated == 0:
+                    self.message_user(request, "Cannot decommission inactive assets.", level=messages.ERROR)
                 else:
-                    message_bit = "%s assets were" % rows_updated
-                self.message_user(request, "%s successfully decommissioned. %s" % (message_bit, error_bit), level=messages.SUCCESS)
+                    if rows_updated == 1:
+                        message_bit = "%s was" % queryset[0].name
+                    else:
+                        message_bit = "%s assets were" % rows_updated
+                    self.message_user(request, "%s successfully decommissioned." % message_bit,
+                                      level=messages.SUCCESS)
+
+                # Generate error string
+                if currently_inactive > 0:
+                    if currently_inactive == 1:
+                        error_bit += " was already inactive."
+                    elif currently_inactive > 1:
+                        error_bit += " were already inactive."
+                    self.message_user(request, "%s Could not decommission." % error_bit, level=messages.WARNING)
+
                 return
 
         # We've submitted a different form (i.e. change list/form). Go to the decommission form.
@@ -195,54 +202,57 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
 
                 # Prepare message string variables
                 rows_updated = len(queryset)
-                deactivated = 0
+                currently_inactive = 0
                 error_bit = ""
 
-                # Use validated data to decommission selected assets
+                # Use validated data to deploy selected assets
                 for asset in queryset:
 
-                    if not asset.active:
-                        deactivated += 1
-                        if deactivated == 1:
+                    if asset.active:
+                        asset.location = form.cleaned_data['location']
+                        asset.owner = form.cleaned_data['recipient']
+                        ah = AssetHistory(asset=asset,
+                                          created_by=request.user,
+                                          incident=form.cleaned_data['deploy_to'],
+                                          recipient=form.cleaned_data['recipient'],
+                                          transfer='internal',
+                                          notes='Deployed to %s as replacement for %s' % (form.cleaned_data['recipient'],
+                                                                                          form.cleaned_data['replacing']))
+
+                        # Save model changes and create reversion instance
+                        with transaction.atomic(), reversion.create_revision():
+                            asset.save()
+                            ah.save()
+                            reversion.set_user(request.user)
+                            reversion.set_comment('Deployed to %s as replacement for %s' % (form.cleaned_data['recipient'],
+                                                                                            form.cleaned_data['replacing']))
+                    else:
+                        currently_inactive += 1
+                        if currently_inactive == 1:
                             error_bit += asset.name
                         else:
                             error_bit += ", %s" % asset.name
 
-                    asset.location = form.cleaned_data['location']
-                    asset.owner = form.cleaned_data['recipient']
-                    asset.active = True
-                    ah = AssetHistory(asset=asset,
-                                      created_by=request.user,
-                                      incident=form.cleaned_data['deploy_to'],
-                                      recipient=form.cleaned_data['recipient'],
-                                      transfer='internal',
-                                      notes='Deployed to %s as replacement for %s' % (form.cleaned_data['recipient'],
-                                                                                      form.cleaned_data['replacing']))
-
-                    # Save model changes and create reversion instance
-                    with transaction.atomic(), reversion.create_revision():
-                        asset.save()
-                        ah.save()
-                        reversion.set_user(request.user)
-                        reversion.set_comment('Deployed to %s as replacement for %s' % (form.cleaned_data['recipient'],
-                                                                                        form.cleaned_data['replacing']))
-
-                rows_updated -= deactivated
-
-                # Pluralize error string
-                if deactivated == 1:
-                    error_bit += " was reactivated. Please double check asset history."
-                elif deactivated > 1:
-                    error_bit += " were reactivated. Please double check asset history."
-                else:
-                    error_bit = ""
+                rows_updated -= currently_inactive
 
                 # Construct message to user based on how many assets were updated
-                if rows_updated == 1:
-                    message_bit = "%s was" % queryset[0].name
+                if rows_updated == 0:
+                    self.message_user(request, "Cannot deploy inactive assets.", level=messages.ERROR)
                 else:
-                    message_bit = "%s assets were" % rows_updated
-                self.message_user(request, "%s successfully deployed. %s" % (message_bit, error_bit), level=messages.SUCCESS)
+                    if rows_updated == 1:
+                        message_bit = "%s was" % queryset[0].name
+                    else:
+                        message_bit = "%s assets were" % rows_updated
+                    self.message_user(request, "%s successfully deployed." % message_bit, level=messages.SUCCESS)
+
+                # Generate error string
+                if currently_inactive > 0:
+                    if currently_inactive == 1:
+                        error_bit += " is not active."
+                    else:
+                        error_bit += " were not active."
+                    self.message_user(request, "%s Please reactivate to deploy." % error_bit, level=messages.WARNING)
+
                 return
 
         # We've submitted a different form (i.e. change list/form). Go to the decommission form.
