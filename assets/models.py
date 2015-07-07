@@ -32,7 +32,7 @@ class Asset(models.Model):
     )
     # Merge with location (legacy) on import
     location = models.CharField(max_length=200, choices=LOCATION_CHOICES, default='none')
-    spec_location = models.CharField('Year/Dept/Room', max_length=200, blank=True)
+    exact_location = models.CharField('Year/Dept/Room', max_length=200, blank=True)
     owner = models.CharField(max_length=200, blank=True)
     purchase_date = models.DateField(null=True)
     invoices = models.CharField('Invoice Numbers', max_length=200, blank=True)
@@ -63,7 +63,7 @@ class AssetHistory(models.Model):
         ('return', 'Return to ICT'),
         ('lost', 'Lost or Stolen'),
         ('decommission', 'Decommission'),
-        ('dispose', 'Dispose'),
+        ('disposed', 'Disposed'),
         ('other', 'Other'),
     )
     incident = models.CharField(max_length=200, choices=INCIDENT_CHOICES, default='general')

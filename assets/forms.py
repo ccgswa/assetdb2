@@ -14,7 +14,10 @@ class AssetAdminForm(forms.ModelForm):
 
 
 class AssetDecommissionForm(forms.Form):
-    location = forms.CharField(label='Location', max_length=100)
+    location_choices = (
+        ('damaged', 'Damaged'), ('lost', 'Lost or Stolen'), ('disposed', 'Disposed'),
+    )
+    location = forms.ChoiceField(label='Incident', widget=forms.RadioSelect, choices=location_choices, initial='damaged')
     recipient = forms.CharField(label='Recipient', max_length=100)
     notes = forms.CharField(label='Notes', max_length=100)
 

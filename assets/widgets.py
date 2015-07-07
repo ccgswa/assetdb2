@@ -8,24 +8,9 @@ class AssetLocationWidget(widgets.CharWidget):
     def clean(self, value):
         if value is None or '' or 'None':
             return 'none'
+        else:
+            return value
 
-        space_split = value.split(' ')
-        first = space_split[0]
-        last = space_split[-1]
-
-        if first == 'CCGS':
-            if last == '(Preparatory School)':
-                return 'prep'
-            else:
-                return 'ccgs'
-       # elif first == '':
-
-        return 'none'
-
-
-
-
-        return value
 
 class ExcelDateWidget(widgets.CharWidget):
     """

@@ -4,6 +4,7 @@ Github repository https://github.com/ccgswa/assetdb2
 
 Functional Requirements:
 
+IMPORTANT - Have changes appear in history log. i.e. Serial changed from "d3423432jk" to "fdslkj3234"
 DONE - Add, edit, delete assets.
 - Custom templates separate from Admin view.
 - Bulk CSV importing. Merging of data fields. Data validity checking. For new stock.

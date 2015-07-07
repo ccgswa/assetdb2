@@ -18,7 +18,7 @@ from widgets import ExcelDateWidget
 # TODO Add CSS and JQuery to admin classes using the Media inner class https://docs.djangoproject.com/en/dev/ref/contrib/admin/#modeladmin-asset-definitions
 
 
-# Inline for displaying asset history on Asset admin page. OVERRIDDEN BY CUSTOM TEMPLATE TAG
+# Inline for displaying asset history on Asset admin page.
 class HistoryInline(admin.StackedInline):
     model = AssetHistory
     verbose_name = 'Asset History'
@@ -76,7 +76,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
     fieldsets = (
         (None, {
             'fields': (('name', 'owner', 'active'),
-                       ('serial', 'location', 'spec_location'),
+                       ('serial', 'location', 'exact_location'),
                        ('manufacturer', 'model'),
                        ('wireless_mac', 'wired_mac', 'bluetooth_mac'))
         }),
@@ -88,7 +88,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
     )
 
 
-    # save_on_top = True
+    save_on_top = True
     actions = ['decommission', 'deploy']
     objectactions = ('decommission', 'deploy', )
 
@@ -124,7 +124,8 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
                 for asset in queryset:
                     if asset.active:
                         asset.location = form.cleaned_data['location']
-                        asset.owner = '%s - Damaged' % asset.owner
+                        asset.exact_location = form.cleaned_data['recipient']
+                        asset.owner = '%s - %s' % (asset.owner, form.cleaned_data['location'])
                         asset.active = False
                         ah = AssetHistory(asset=asset,
                                           created_by=request.user,
@@ -175,7 +176,8 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
         else:
             # Create a new decommission form
             form = AssetDecommissionForm()
-        # Render the empty form on a new page passing selected assets and form object fields as dictionaries
+
+        # Render the response to the http request
         return render(request, 'admin/assets/decommission.html',
                       {'objects': queryset, 'form': form})
 
