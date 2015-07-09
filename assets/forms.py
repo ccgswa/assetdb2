@@ -28,6 +28,6 @@ class AssetDeploymentForm(forms.Form):
     )
     deploy_to = forms.ChoiceField(label='Deploy to', widget=forms.RadioSelect, choices=deploy_choices, initial='deploy_student')
     location_choices = Asset.LOCATION_CHOICES
-    location = forms.ChoiceField(label='Location', choices=location_choices, initial='ccgs')
+    location = forms.ChoiceField(label='Location', choices=location_choices, initial=location_choices[1][0])
     recipient = forms.CharField(label='Name', max_length=100)
     replacing = forms.CharField(label='Replacement for', max_length=100)

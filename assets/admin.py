@@ -71,13 +71,13 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
     form = AssetAdminForm
 
     search_fields = ['name', 'serial', 'wireless_mac']
-    list_display = ('name', 'serial', 'owner', 'active', 'purchase_date')
+    list_display = ('name', 'serial', 'owner', 'location', 'exact_location', 'active', 'purchase_date')
 #   readonly_fields = ['created_date', 'created_by'] # Don't appear on change_form page. DEPRECATED. USING REVERSION
     fieldsets = (
         (None, {
             'fields': (('name', 'owner', 'active'),
                        ('serial', 'location', 'exact_location'),
-                       ('manufacturer', 'model'),
+                       ('manufacturer', 'model', 'ip_address'),
                        ('wireless_mac', 'wired_mac', 'bluetooth_mac'))
         }),
         ('Financial', {

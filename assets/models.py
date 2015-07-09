@@ -19,13 +19,12 @@ class Asset(models.Model):
     name = models.CharField(max_length=200, db_index=True, unique=True)
     manufacturer = models.CharField(max_length=200, blank=True)
     model = models.CharField(max_length=200, blank=True)
-    serial = models.CharField('Serial Number', max_length=200, unique=True, blank=True)
+    serial = models.CharField('Serial Number', max_length=200, db_index=True, blank=True)
 
     LOCATION_CHOICES = (
         ('none', 'None'),
-        ('ccgs', 'Senior School'),
-        ('prep', 'Prep School'),
-        ('kooringal', 'Kooringal'),
+        ('ccgs', 'CCGS Main Campus'),
+        ('kooringal', 'Kooringal Campus'),
         ('damaged', 'Damaged'),
         ('disposed', 'Disposed'),
         ('lost', 'Lost or Stolen')
@@ -36,13 +35,14 @@ class Asset(models.Model):
     owner = models.CharField(max_length=200, blank=True)
     purchase_date = models.DateField(null=True)
     invoices = models.CharField('Invoice Numbers', max_length=200, blank=True)
-    wired_mac = models.CharField('Wired MAC', max_length=200, unique=True, blank=True)
-    wireless_mac = models.CharField('Wireless MAC', max_length=200, unique=True, blank=True)
-    bluetooth_mac = models.CharField('Bluetooth MAC', max_length=200, unique=True, blank=True)
+    wired_mac = models.CharField('Wired MAC', max_length=200, blank=True)
+    wireless_mac = models.CharField('Wireless MAC', max_length=200, blank=True)
+    bluetooth_mac = models.CharField('Bluetooth MAC', max_length=200, blank=True)
     far_asset = models.BooleanField('FAR Asset', default=False)
     far_cost = models.CharField(max_length=200, blank=True)
     ed_cost = models.CharField('Educational Cost', max_length=200, blank=True)
     warranty_period = models.CharField(max_length=200, blank=True)
+    ip_address = models.CharField(max_length=200, blank=True)
     active = models.BooleanField(default=True)
 
     def __str__(self):

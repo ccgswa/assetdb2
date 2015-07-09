@@ -2,7 +2,7 @@ import csv
 from models import Asset
 from datetime import datetime
 
-Class
+
 def get_exact_location(value):
     colon_split = value.split(':')
     if len(colon_split) > 1:
