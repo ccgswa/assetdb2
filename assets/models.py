@@ -22,7 +22,7 @@ class Asset(models.Model):
     serial = models.CharField('Serial Number', max_length=200, db_index=True, blank=True)
 
     LOCATION_CHOICES = (
-        ('none', 'None'),
+        ('none', '--------------------'),
         ('ccgs', 'CCGS Main Campus'),
         ('kooringal', 'Kooringal Campus'),
         ('damaged', 'Damaged'),
@@ -33,7 +33,7 @@ class Asset(models.Model):
     location = models.CharField(max_length=200, choices=LOCATION_CHOICES, default='none')
     exact_location = models.CharField('Year/Dept/Room', max_length=200, blank=True)
     owner = models.CharField(max_length=200, blank=True)
-    purchase_date = models.DateField(null=True)
+    purchase_date = models.DateField(null=True, blank=True)
     invoices = models.CharField('Invoice Numbers', max_length=200, blank=True)
     wired_mac = models.CharField('Wired MAC', max_length=200, blank=True)
     wireless_mac = models.CharField('Wireless MAC', max_length=200, blank=True)
@@ -46,7 +46,7 @@ class Asset(models.Model):
     active = models.BooleanField(default=True)
 
     def __str__(self):
-        return self.name
+        return self.name.encode('ascii', errors='replace')
 
 
 class AssetHistory(models.Model):
@@ -64,7 +64,6 @@ class AssetHistory(models.Model):
         ('lost', 'Lost or Stolen'),
         ('decommission', 'Decommission'),
         ('disposed', 'Disposed'),
-        ('other', 'Other'),
     )
     incident = models.CharField(max_length=200, choices=INCIDENT_CHOICES, default='general')
 
@@ -79,5 +78,5 @@ class AssetHistory(models.Model):
     notes = models.TextField(blank=True)
 
     def __str__(self):
-        return self.notes
+        return self.notes.encode('ascii', errors='replace')
 

@@ -4,6 +4,11 @@
 {% block submit_buttons_top %}{{ block.super }}<div class="submit-row"><input type="submit" value="Decommission" name="_decommission" /></div>{% endblock %}
 {% endcomment %}
 
+{% comment %}
+{# No longer required. Asset History information is now prepended to stacked.html . Code kept for reference. #}
+
 {% block after_field_sets %}
     {% if object_id %}{% display_asset_history object_id %}{% endif %}
 {% endblock %}
+
+{% endcomment %}

@@ -6,17 +6,25 @@
 }
 
 .history-content {
-    background-color: lightgray;
+    background-color: #F0EDED;
     padding:5px 5px 5px 15px;
 }
 
-.history-date {
+.history-creator {
     float: right;
     color: #828282;
+
 }
 
-.history-creator {
+.history-header-content {
+    overflow:hidden;
+    display:inline-table;
+    text-align:left;
+}
+
+.history-incident {
     margin-left:5px;
+    width:150px;
 }
 
 .history {

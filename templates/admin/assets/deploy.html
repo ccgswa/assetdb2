@@ -5,7 +5,7 @@
 
         {% csrf_token %}
 
-        <h2>Deploy the following Assets</h2>
+        <h2>Deploy Asset</h2>
 
         <div>
             {{ form }}
@@ -15,7 +15,7 @@
         </div>
 
 
-
+        <p>The following assets will be deployed:</p>
         <ul>
             {% for object in objects %}
                 <li>

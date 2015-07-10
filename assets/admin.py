@@ -25,7 +25,7 @@ class HistoryInline(admin.StackedInline):
     verbose_name_plural = 'Asset History'
     can_delete = False
     template = 'admin/assets/assethistory/edit_inline/stacked.html'
-    fields = (('incident', 'transfer'), 'recipient', 'notes')
+    fields = ('recipient', 'notes',)
     extra = 1
 
     formfield_overrides = {
@@ -76,8 +76,8 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
     fieldsets = (
         (None, {
             'fields': (('name', 'owner', 'active'),
-                       ('serial', 'location', 'exact_location'),
-                       ('manufacturer', 'model', 'ip_address'),
+                       ('location', 'exact_location', 'ip_address'),
+                       ('serial', 'model', 'manufacturer', ),
                        ('wireless_mac', 'wired_mac', 'bluetooth_mac'))
         }),
         ('Financial', {
@@ -87,11 +87,8 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
 
     )
 
-
     save_on_top = True
     actions = ['decommission', 'deploy']
-    objectactions = ('decommission', 'deploy', )
-
     inlines = [
         HistoryInline,
     ]
@@ -139,7 +136,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
                             asset.save()
                             ah.save()
                             reversion.set_user(request.user)
-                            reversion.set_comment('Decommissioned Recipient: %s Notes: %s' %
+                            reversion.set_comment('Asset decommissioned. Recipient: %s Note: %s' %
                                                   (form.cleaned_data['recipient'],
                                                    form.cleaned_data['notes']))
                     else:
@@ -211,6 +208,9 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
                 for asset in queryset:
 
                     if asset.active:
+                        notes = 'Deployed to %s' % form.cleaned_data['recipient']
+                        if form.cleaned_data['replacing'] != '':
+                            notes += ' as replacement for %s' % form.cleaned_data['replacing']
                         asset.location = form.cleaned_data['location']
                         asset.owner = form.cleaned_data['recipient']
                         ah = AssetHistory(asset=asset,
@@ -218,8 +218,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
                                           incident=form.cleaned_data['deploy_to'],
                                           recipient=form.cleaned_data['recipient'],
                                           transfer='internal',
-                                          notes='Deployed to %s as replacement for %s' % (form.cleaned_data['recipient'],
-                                                                                          form.cleaned_data['replacing']))
+                                          notes=notes)
 
                         # Save model changes and create reversion instance
                         with transaction.atomic(), reversion.create_revision():
@@ -265,9 +264,72 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
         return render(request, 'admin/assets/deploy.html',
                       {'objects': queryset, 'form': form})
 
+    @takes_instance_or_queryset
+    def return_ict(self, request, queryset):
+
+        # Prepare message string variables
+        rows_updated = len(queryset)
+        currently_inactive = 0
+        error_bit = ""
+
+        for asset in queryset:
+            if asset.active:
+                notes = 'Returned to ICT Services by %s' % asset.owner
+                asset.location = 'ccgs'
+                asset.exact_location = 'ICT Services'
+                asset.owner = 'ICT Services'
+                ah = AssetHistory(asset=asset,
+                                  created_by=request.user,
+                                  incident='return',
+                                  recipient='ICT Services',
+                                  transfer='internal',
+                                  notes=notes)
+
+                # Save model changes and create reversion instance
+                with transaction.atomic(), reversion.create_revision():
+                    asset.save()
+                    ah.save()
+                    reversion.set_user(request.user)
+                    reversion.set_comment(notes)
+            else:
+                currently_inactive += 1
+                if currently_inactive == 1:
+                    error_bit += asset.name
+                else:
+                    error_bit += ", %s" % asset.name
+
+                rows_updated -= currently_inactive
+
+                # Construct message to user based on how many assets were updated
+                if rows_updated == 0:
+                    self.message_user(request, "Cannot return inactive assets.", level=messages.ERROR)
+                else:
+                    if rows_updated == 1:
+                        message_bit = "%s was" % queryset[0].name
+                    else:
+                        message_bit = "%s assets were" % rows_updated
+                    self.message_user(request, "%s returned to ICT Services." % message_bit,
+                                      level=messages.SUCCESS)
+
+                # Generate error string
+                if currently_inactive > 0:
+                    if currently_inactive == 1:
+                        error_bit += " is inactive."
+                    elif currently_inactive > 1:
+                        error_bit += " are inactive."
+                    self.message_user(request, "%s Cannot return." % error_bit, level=messages.WARNING)
+
+    # Names for django action tools
+    decommission.short_description = "Decommission selected assets"
+    decommission.label = "Decommission"
 
     deploy.short_description = "Deploy selected assets"
     deploy.label = "Deploy"
+
+    return_ict.short_description = "Return selected assets"
+    return_ict.label = "Return"
+
+    objectactions = ('decommission', 'deploy', 'return_ict', )
 
     # Custom save to set created_by for AssetHistory inline instances
     def save_formset(self, request, form, formset, change):
@@ -292,7 +354,7 @@ class AssetHistoryAdmin(reversion.VersionAdmin, ImportExportModelAdmin):
     AssetHistoryAdmin
     """
 
-    list_display = ('asset', 'incident', 'notes')
+    list_display = ('asset', 'incident', 'created_by', 'created_date', 'notes')
     search_fields = ['asset', 'notes']
 
     # Integrate ImportExport functionality for AssetAdmin

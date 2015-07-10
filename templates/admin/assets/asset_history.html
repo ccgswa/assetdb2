@@ -3,8 +3,9 @@
 {% for asset_history in asset_history %}
     <div class="history">
         <div class="history-header">
-            <span class="history-creator">{{ asset_history.created_by }}</span>
-            <span class="history-date">on {{ asset_history.created_date }}</span>
+            <span class="history-header-content history-incident">{{ asset_history.get_incident_display }}</span>
+            <span class="history-header-content">{{ asset_history.recipient }} </span>
+            <span class="history-creator">{{ asset_history.created_by }} on {{ asset_history.created_date }}</span>
         </div>
         <div class="history-content">{{ asset_history.notes }}</div>
     </div>
