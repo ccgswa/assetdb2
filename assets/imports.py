@@ -305,7 +305,7 @@ def import_history():
 def import_ip_addresses():
     """
         Imports all IP Addresses associated with assets and adds them to the new asset model.
-    :return: None
+        :return: None
     """
 
     os.chdir(csv_path)
@@ -319,6 +319,7 @@ def import_ip_addresses():
                 asset = Asset.objects.get(pk=int(row[1]))
                 asset.ip_address = row[2]
                 asset.save()
+
 
 def query_yes_no(question, default="yes"):
     """Ask a yes/no question via raw_input() and return their answer.
@@ -352,18 +353,23 @@ def query_yes_no(question, default="yes"):
             sys.stdout.write("Please respond with 'yes' or 'no' "
                              "(or 'y' or 'n').\n")
 
+
 def import_all():
 
-    print 'Importing asset data...'
-    import_assets()
-    print 'Importing user data...'
-    import_users()
-    print 'Importing asset history data...'
-    import_history()
-    print 'Importing IP address assignments...'
-    import_ip_addresses()
-    print 'Import complete! \n'
-    print 'If you\'re using Postgres don\'t forget to run reset_id() to fix the database cursor offset.'
+    if query_yes_no("Have you removed \'auto_now_add=True\' from the AssetHistory \'created_by'\ field?"):
+        print 'Importing asset data...'
+        import_assets()
+        print 'Importing user data...'
+        import_users()
+        print 'Importing asset history data...'
+        import_history()
+        print 'Importing IP address assignments...'
+        import_ip_addresses()
+        print 'Import complete! \n'
+        print 'If you\'re using Postgres don\'t forget to run reset_id() to fix the database cursor offset.'
+        print 'IMPORTANT: Don\'t forget to add auto_now_add=True back into the AssetHistory created_by field.'
+    else:
+        print 'Import aborted by user.'
 
 
 def reset_database_cursor():

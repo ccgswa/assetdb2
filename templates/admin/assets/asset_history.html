@@ -2,7 +2,15 @@
 
 {% for asset_history in asset_history %}
     <div class="history">
-        <div class="history-header">
+        <div class="history-header {% if asset_history.incident == 'deploy_staff' or asset_history.incident == 'deploy_student'%}
+        history-header-deploy
+        {% elif asset_history.incident == 'lost' or asset_history.incident == 'decommission' or asset_history.incident == 'disposed' %}
+        history-header-decommission
+        {% elif asset_history.incident == 'return' %}
+        history-header-return
+        {% else %}
+        history-header-general
+        {% endif %}">
             <span class="history-header-content history-incident">{{ asset_history.get_incident_display }}</span>
             <span class="history-header-content">{{ asset_history.recipient }} </span>
             <span class="history-creator">{{ asset_history.created_by }} on {{ asset_history.created_date }}</span>

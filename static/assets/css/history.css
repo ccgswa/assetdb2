@@ -1,8 +1,23 @@
 .history-header {
-    background-color: lightsteelblue;
     margin-top: 0;
     padding: 2px 2px 2px 2px;
     font-weight:bold;
+}
+
+.history-header-general {
+    background: lightsteelblue;
+}
+
+.history-header-decommission {
+    background-color: lightcoral;
+}
+
+.history-header-deploy {
+    background-color: #CCCCFF;
+}
+
+.history-header-return {
+    background-color: #C2FFE0;
 }
 
 .history-content {

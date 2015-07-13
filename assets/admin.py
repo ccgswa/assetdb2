@@ -202,12 +202,13 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
                 # Prepare message string variables
                 rows_updated = len(queryset)
                 currently_inactive = 0
+                currently_deployed = 0
                 error_bit = ""
 
                 # Use validated data to deploy selected assets
                 for asset in queryset:
 
-                    if asset.active:
+                    if asset.active and asset.owner == 'ICT Services':
                         notes = 'Deployed to %s' % form.cleaned_data['recipient']
                         if form.cleaned_data['replacing'] != '':
                             notes += ' as replacement for %s' % form.cleaned_data['replacing']
@@ -228,23 +229,28 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
                             reversion.set_comment('Deployed to %s as replacement for %s' % (form.cleaned_data['recipient'],
                                                                                             form.cleaned_data['replacing']))
                     else:
-                        currently_inactive += 1
-                        if currently_inactive == 1:
+                        if not asset.active:
+                            currently_inactive += 1
+                        elif asset.owner != 'ICT Services':
+                            currently_deployed += 1
+
+                        if (currently_inactive == 1 and currently_deployed == 0) or (currently_inactive == 0 and currently_deployed == 1):
                             error_bit += asset.name
                         else:
                             error_bit += ", %s" % asset.name
 
-                rows_updated -= currently_inactive
+                rows_updated -= currently_inactive + currently_deployed
 
                 # Construct message to user based on how many assets were updated
                 if rows_updated == 0:
-                    self.message_user(request, "Cannot deploy inactive assets.", level=messages.ERROR)
+                    self.message_user(request, "Could not deploy anything.", level=messages.ERROR)
                 else:
                     if rows_updated == 1:
                         message_bit = "%s was" % queryset[0].name
                     else:
                         message_bit = "%s assets were" % rows_updated
-                    self.message_user(request, "%s successfully deployed." % message_bit, level=messages.SUCCESS)
+                    self.message_user(request, "%s successfully deployed to %s" %
+                                      (message_bit, form.cleaned_data['recipient']), level=messages.SUCCESS)
 
                 # Generate error string
                 if currently_inactive > 0:
@@ -253,6 +259,15 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
                     else:
                         error_bit += " were not active."
                     self.message_user(request, "%s Please reactivate to deploy." % error_bit, level=messages.WARNING)
+
+
+                if currently_deployed > 0:
+                    if currently_deployed == 1:
+                        error_bit = " %s has already been deployed to %s." % (asset.name, asset.owner)
+                    else:
+                        error_bit = " Some assets have already been deployed."
+                    self.message_user(request, "%s You must return assets before deploying again." % error_bit,
+                                      level=messages.WARNING)
 
                 return
 

@@ -32,4 +32,5 @@ class AssetDeploymentForm(forms.Form):
         ('ccgs', 'CCGS Main Campus'), ('kooringal', 'Kooringal Campus'), ('none', '--------------------'),
     )
     location = forms.ChoiceField(label='Location', choices=location_choices, initial='ccgs')
+    exact_location = forms.CharField(label='Year/Dept/Room', max_length=100, required=False)
     replacing = forms.CharField(label='Replacement for', max_length=100, required=False)
