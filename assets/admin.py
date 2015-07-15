@@ -9,6 +9,7 @@ from django_object_actions import DjangoObjectActions, takes_instance_or_queryse
 from .forms import AssetDecommissionForm,AssetDeploymentForm, AssetAdminForm
 from django.shortcuts import render
 import reversion
+import plistlib
 from widgets import ExcelDateWidget
 
 # TODO Explore further customisations https://docs.djangoproject.com/en/1.8/intro/tutorial02/#customizing-your-application-s-templates
@@ -87,8 +88,8 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
 
     )
 
-    save_on_top = True
-    actions = ['decommission', 'deploy']
+    # save_on_top = True
+    actions = ['decommission', 'deploy', 'return_ict']
     inlines = [
         HistoryInline,
     ]
@@ -209,7 +210,13 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
                 for asset in queryset:
 
                     if asset.active and asset.owner == 'ICT Services':
-                        notes = 'Deployed to %s' % form.cleaned_data['recipient']
+                        notes = ''
+                        deploy_type = ''
+                        if form.cleaned_data['deploy_to'] == 'deploy_staff':
+                            deploy_type = 'staff member'
+                        elif form.cleaned_data['deploy_to'] == 'deploy_student':
+                            deploy_type = 'student'
+                        notes = 'Deployed to %s %s' % (deploy_type, form.cleaned_data['recipient'])
                         if form.cleaned_data['replacing'] != '':
                             notes += ' as replacement for %s' % form.cleaned_data['replacing']
                         asset.location = form.cleaned_data['location']
@@ -226,8 +233,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
                             asset.save()
                             ah.save()
                             reversion.set_user(request.user)
-                            reversion.set_comment('Deployed to %s as replacement for %s' % (form.cleaned_data['recipient'],
-                                                                                            form.cleaned_data['replacing']))
+                            reversion.set_comment(notes)
                     else:
                         if not asset.active:
                             currently_inactive += 1
@@ -260,7 +266,6 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
                         error_bit += " were not active."
                     self.message_user(request, "%s Please reactivate to deploy." % error_bit, level=messages.WARNING)
 
-
                 if currently_deployed > 0:
                     if currently_deployed == 1:
                         error_bit = " %s has already been deployed to %s." % (asset.name, asset.owner)
@@ -273,11 +278,12 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
 
         # We've submitted a different form (i.e. change list/form). Go to the decommission form.
         else:
-            # Create a new decommission form
+            # Create a new deployment form
             form = AssetDeploymentForm()
         # Render the empty form on a new page passing selected assets and form object fields as dictionaries
         return render(request, 'admin/assets/deploy.html',
                       {'objects': queryset, 'form': form})
+
 
     @takes_instance_or_queryset
     def return_ict(self, request, queryset):
@@ -288,6 +294,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
         error_bit = ""
 
         for asset in queryset:
+            # TODO Return: Add logic (and appropriate error messaging) for when an asset is already owned by ICT Services
             if asset.active:
                 notes = 'Returned to ICT Services by %s' % asset.owner
                 asset.location = 'ccgs'

@@ -27,7 +27,7 @@ class AssetDeploymentForm(forms.Form):
         ('deploy_student', 'Student'), ('deploy_staff', 'Staff Member'),
     )
     deploy_to = forms.ChoiceField(label='Deploy to', widget=forms.RadioSelect, choices=deploy_choices, initial='deploy_student')
-    recipient = forms.CharField(label='Recipient', max_length=100)
+    recipient = forms.CharField(label='Recipient')
     location_choices = (
         ('ccgs', 'CCGS Main Campus'), ('kooringal', 'Kooringal Campus'), ('none', '--------------------'),
     )

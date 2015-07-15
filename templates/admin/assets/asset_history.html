@@ -2,7 +2,8 @@
 
 {% for asset_history in asset_history %}
     <div class="history">
-        <div class="history-header {% if asset_history.incident == 'deploy_staff' or asset_history.incident == 'deploy_student'%}
+        <div class="history-header
+        {% if asset_history.incident == 'deploy_staff' or asset_history.incident == 'deploy_student'%}
         history-header-deploy
         {% elif asset_history.incident == 'lost' or asset_history.incident == 'decommission' or asset_history.incident == 'disposed' %}
         history-header-decommission

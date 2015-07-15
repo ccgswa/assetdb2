@@ -2,11 +2,8 @@ import datetime
 from django.db import models
 from django.contrib.auth.models import User
 
-# TODO Confirm Asset model specification.
-
-
 # Abstract class to track model changes
-#class AbstractClass(models.Model):
+# class AbstractClass(models.Model):
 #    created_by = models.ForeignKey(User, editable=False)
 #    created_date = models.DateTimeField(auto_now_add=True)
 

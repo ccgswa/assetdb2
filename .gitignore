@@ -61,3 +61,6 @@ assetdb2/settings_secret.py
 
 #Pycharm settings folder
 .idea/
+
+# Code snippets
+snippets.py
