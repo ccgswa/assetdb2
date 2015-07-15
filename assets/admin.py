@@ -6,7 +6,7 @@ from models import Asset, AssetHistory
 from import_export import resources, fields, widgets
 from import_export.admin import ImportExportModelAdmin
 from django_object_actions import DjangoObjectActions, takes_instance_or_queryset
-from .forms import AssetDecommissionForm,AssetDeploymentForm, AssetAdminForm
+from .forms import AssetDecommissionForm,AssetDeploymentForm, AssetAdminForm, AssetReplacementForm1, AssetReplacementForm2
 from django.shortcuts import render
 import reversion
 import plistlib
@@ -90,6 +90,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
 
     # save_on_top = True
     actions = ['decommission', 'deploy', 'return_ict']
+    objectactions = ('decommission', 'replace_ipad', 'return_ict', 'deploy',)
     inlines = [
         HistoryInline,
     ]
@@ -284,6 +285,53 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
         return render(request, 'admin/assets/deploy.html',
                       {'objects': queryset, 'form': form})
 
+    # TODO Complete/Fix the replace iPad function.
+    @takes_instance_or_queryset
+    def replace_ipad(self, request, queryset):
+
+        template = 'admin/assets/replace_ipad1.html'
+
+        if 'cancel' in request.POST:
+            self.message_user(request, "Replacement cancelled.", level=messages.ERROR)
+            return
+
+        elif 'ipad_config' in request.POST:
+
+            form = AssetReplacementForm1(request.POST)
+
+            if form.is_valid():
+                # Process the file data and save the data for use on the second page
+                pass
+
+            # Create empty form to pass to render function
+            template = 'admin/assets/replace_ipad2.html'
+            form = AssetReplacementForm2()
+            print 'First form submitted'
+            # Don't return
+
+        elif 'replace' in request.POST:
+
+            form = AssetReplacementForm2(request.POST)
+            if form.is_valid():
+                print 'Second form submitted'
+                # Do stuff.
+                return
+
+        else:
+            form = AssetReplacementForm1()
+
+        return render(request, template,
+                      {'objects': queryset, 'form': form})
+
+       # if len(queryset) > 1:
+       #     self.message_user(request, "Cannot replace multiple assets. "
+       #                                "Try using 'Replace' from an individual asset\'s page.", level=messages.ERROR)
+       # else:
+       #     pass
+            # i = plistlib.readPlist(form['difile'].file)
+
+       # asset = queryset[0]
+
 
     @takes_instance_or_queryset
     def return_ict(self, request, queryset):
@@ -341,6 +389,14 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
                         error_bit += " are inactive."
                     self.message_user(request, "%s Cannot return." % error_bit, level=messages.WARNING)
 
+    # Custom save to set created_by for AssetHistory inline instances
+    def save_formset(self, request, form, formset, change):
+        instances = formset.save(commit=False)
+        for instance in instances:
+            instance.created_by = request.user
+            instance.save()
+        formset.save_m2m()
+
     # Names for django action tools
     decommission.short_description = "Decommission selected assets"
     decommission.label = "Decommission"
@@ -351,15 +407,8 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
     return_ict.short_description = "Return selected assets"
     return_ict.label = "Return"
 
-    objectactions = ('decommission', 'deploy', 'return_ict', )
-
-    # Custom save to set created_by for AssetHistory inline instances
-    def save_formset(self, request, form, formset, change):
-        instances = formset.save(commit=False)
-        for instance in instances:
-            instance.created_by = request.user
-            instance.save()
-        formset.save_m2m()
+    replace_ipad.short_description = "Replace iPads"
+    replace_ipad.label = "Replace"
 
     pass
 

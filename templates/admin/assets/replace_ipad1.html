@@ -1,0 +1,30 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+    <form action="" method="post">
+
+        {% csrf_token %}
+
+        <h2>Replace iPad</h2>
+
+        <div>
+            {{ form }}
+            <input type="hidden" name="action" value="replace_ipad" />
+            <input type="submit" name="ipad_config" value="Continue" style="color: #FF3333;" /> {# Add class="default" to look the same as admin #}
+            <input type="submit" name="cancel" value="Cancel" />
+        </div>
+
+
+        <p>The following assets will be replaced:</p>
+        <ul>
+            {% for object in objects %}
+                <li>
+                    <a href="{{ object.pk }}/">{{ object.name }}</a>
+                    {# Research what the below input achieves. Required by admin actions? #}
+                    <input type="hidden" name="_selected_action" value="{{ object.pk }}">
+                </li>
+            {% endfor %}
+        </ul>
+
+    </form>
+{% endblock %}

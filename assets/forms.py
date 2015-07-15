@@ -34,3 +34,24 @@ class AssetDeploymentForm(forms.Form):
     location = forms.ChoiceField(label='Location', choices=location_choices, initial='ccgs')
     exact_location = forms.CharField(label='Year/Dept/Room', max_length=100, required=False)
     replacing = forms.CharField(label='Replacement for', max_length=100, required=False)
+
+
+class AssetReplacementForm1(forms.Form):
+    config_file = forms.FileField(label='New iPad .deviceinfo file')
+    replacing = forms.CharField(label='Replacement for', required=False)
+
+
+class AssetReplacementForm2(forms.Form):
+    new_ite = forms.CharField(label='Replacement for')
+    manufacturer = forms.CharField(label='Manufacturer')
+    model = forms.CharField(label='Model')
+    serial = forms.CharField(label='Serial')
+    wireless_mac = forms.CharField(label='Wireless MAC')
+    bluetooth_mac = forms.CharField(label='Bluetooth MAC')
+    purchase_date = forms.DateField(label='Purchase Date')
+    ed_cost= forms.CharField(label='Educational Cost')
+    far_cost = forms.CharField(label='FAR Cost')
+    warranty_period = forms.CharField(label='Warranty Period')
+    far_asset = forms.BooleanField(label='FAR Asset')
+    active = forms.BooleanField(label='Active')
+
