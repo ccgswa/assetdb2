@@ -18,6 +18,8 @@ from widgets import ExcelDateWidget
 
 # TODO Add CSS and JQuery to admin classes using the Media inner class https://docs.djangoproject.com/en/dev/ref/contrib/admin/#modeladmin-asset-definitions
 
+# TODO Leave Asset History comment when new asset created via Add Asset.
+
 
 # Inline for displaying asset history on Asset admin page.
 class HistoryInline(admin.StackedInline):
@@ -26,7 +28,7 @@ class HistoryInline(admin.StackedInline):
     verbose_name_plural = 'Asset History'
     can_delete = False
     template = 'admin/assets/assethistory/edit_inline/stacked.html'
-    fields = ('recipient', 'notes',)
+    fields = ('notes',)
     extra = 1
 
     formfield_overrides = {
