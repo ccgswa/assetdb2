@@ -379,7 +379,7 @@ class AssetHistoryAdmin(reversion.VersionAdmin, ImportExportModelAdmin):
     """
 
     list_display = ('asset', 'incident', 'created_by', 'created_date', 'notes')
-    search_fields = ['asset', 'notes']
+    search_fields = ['asset__name', 'notes', 'created_by__username']
 
     # Integrate ImportExport functionality for AssetAdmin
     resource_class = AssetHistoryResource

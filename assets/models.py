@@ -30,7 +30,7 @@ class Asset(models.Model):
     location = models.CharField(max_length=200, choices=LOCATION_CHOICES, default='none')
     exact_location = models.CharField('Year/Dept/Room', max_length=200, blank=True)
     owner = models.CharField(max_length=200, blank=True)
-    purchase_date = models.DateField(null=True, blank=True)
+    purchase_date = models.DateField(null=True, blank=True, help_text="Please use the following format: <em>YYYY-MM-DD</em>.")
     invoices = models.CharField('Invoice Numbers', max_length=200, blank=True)
     wired_mac = models.CharField('Wired MAC', max_length=200, blank=True)
     wireless_mac = models.CharField('Wireless MAC', max_length=200, blank=True)
