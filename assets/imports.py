@@ -370,7 +370,7 @@ def import_admin_log():
 
 def import_all():
 
-    if query_yes_no("Have you removed \'auto_now_add=True\' from the AssetHistory \'created_by'\ field?"):
+    if query_yes_no("Have you removed \'auto_now_add=True\' from the AssetHistory \'created_by\' field?"):
         print 'Importing asset data...'
         import_assets()
         print 'Importing user data...'

@@ -68,12 +68,12 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
         }
 
 #   For custom change_form template (i.e. override title etc)
-#   change_form_template = 'admin/assets/asset/change_form.html'
+    change_form_template = 'admin/assets/asset/change_form.html'
     change_list_template = 'admin/assets/asset/change_list.html'
 
     form = AssetAdminForm
 
-    search_fields = ['name', 'serial', 'wireless_mac']
+    search_fields = ['name', 'serial', 'model', 'exact_location', 'owner', 'wired_mac', 'wireless_mac', 'bluetooth_mac']
     list_display = ('name', 'model', 'serial', 'owner', 'location', 'exact_location', 'active', 'purchase_date')
 #   readonly_fields = ['created_date', 'created_by'] # Don't appear on change_form page. DEPRECATED. USING REVERSION
     fieldsets = (
