@@ -55,3 +55,22 @@ class AssetReplacementForm2(forms.Form):
     far_asset = forms.BooleanField(label='FAR Asset')
     active = forms.BooleanField(label='Active')
 
+
+class iPadReplacementForm(forms.Form):
+
+    class Media:
+        js = ('assets/js/upload.js',)
+
+    config_file = forms.FileField(label='New iPad .deviceinfo file', required=False)
+    new_ite = forms.CharField(label='Replacement ITE:')
+    manufacturer = forms.CharField(label='Manufacturer')
+    model = forms.CharField(label='Model')
+    serial = forms.CharField(label='Serial')
+    wireless_mac = forms.CharField(label='Wireless MAC')
+    bluetooth_mac = forms.CharField(label='Bluetooth MAC')
+    purchase_date = forms.DateField(label='Purchase Date')
+    ed_cost= forms.CharField(label='Educational Cost')
+    far_cost = forms.CharField(label='FAR Cost')
+    warranty_period = forms.CharField(label='Warranty Period')
+    far_asset = forms.BooleanField(label='FAR Asset')
+    active = forms.BooleanField(label='Active')

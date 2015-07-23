@@ -6,7 +6,7 @@ from models import Asset, AssetHistory
 from import_export import resources, fields, widgets
 from import_export.admin import ImportExportModelAdmin
 from django_object_actions import DjangoObjectActions, takes_instance_or_queryset
-from .forms import AssetDecommissionForm,AssetDeploymentForm, AssetAdminForm, AssetReplacementForm1, AssetReplacementForm2
+from .forms import *
 from django.shortcuts import render
 import reversion
 import plistlib
@@ -287,7 +287,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
 
     # TODO Complete/Fix the replace iPad function.
     @takes_instance_or_queryset
-    def replace_ipad(self, request, queryset):
+    def replace_ipad_multiform(self, request, queryset):
 
         template = 'admin/assets/replace_ipad1.html'
 
@@ -323,14 +323,47 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
         return render(request, template,
                       {'objects': queryset, 'form': form})
 
-       # if len(queryset) > 1:
-       #     self.message_user(request, "Cannot replace multiple assets. "
-       #                                "Try using 'Replace' from an individual asset\'s page.", level=messages.ERROR)
-       # else:
-       #     pass
-            # i = plistlib.readPlist(form['difile'].file)
+        # if len(queryset) > 1:
+        #     self.message_user(request, "Cannot replace multiple assets. "
+        #                                "Try using 'Replace' from an individual asset\'s page.", level=messages.ERROR)
+        # else:
+        #     pass
+        # i = plistlib.readPlist(form['difile'].file)
 
-       # asset = queryset[0]
+        # asset = queryset[0]
+
+
+    # TODO Complete/Fix the replace iPad function.
+    @takes_instance_or_queryset
+    def replace_ipad(self, request, queryset):
+
+        if 'cancel' in request.POST:
+            self.message_user(request, "Replacement cancelled.", level=messages.ERROR)
+            return
+
+        elif 'replace' in request.POST:
+            form = iPadReplacementForm(data=request.POST, files=request.FILES)
+
+            if form.is_valid():
+                asset = queryset[0]
+                self.message_user(request, asset.__str__(), level=messages.SUCCESS)
+                return
+
+        else:
+            if len(queryset) > 1:
+                self.message_user(request, "This action cannot be applied to multiple assets.", level=messages.ERROR)
+                return
+            else:
+                old_asset = queryset[0]
+                form = iPadReplacementForm(initial={'purchase_date': old_asset.purchase_date,
+                                                    'ed_cost': old_asset.ed_cost,
+                                                    'far_cost': old_asset.far_cost,
+                                                    'warranty_period': old_asset.warranty_period,
+                                                    'far_asset': True,
+                                                    'active': True})
+
+        return render(request, 'admin/assets/replace_ipad.html',
+                      {'objects': queryset, 'form': form})
 
 
     @takes_instance_or_queryset
