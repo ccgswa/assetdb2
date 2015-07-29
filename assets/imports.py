@@ -444,7 +444,6 @@ def legacy_import():
 
         reader.next()
 
-
     with open(asset_csv, 'rb') as f:
         reader = csv.reader(f)
 

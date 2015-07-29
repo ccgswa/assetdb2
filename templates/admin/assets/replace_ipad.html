@@ -1,47 +1,110 @@
 {% extends "admin/base_site.html" %}
 
 {% load static %}
+{% load admin_urls %}
 
 {% block content %}
 
-    <script src="{% static 'assets/js/jquery-2.1.4.min.js' %}"></script>
-    <script src="{% static 'assets/js/upload.js' %}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static "assets/css/replace_ipad.css" %}">
+    <script src="{% static "assets/js/jquery-2.1.4.min.js" %}"></script>
+    <script src="{% static "assets/js/plist_parser.js" %}"></script>
 
     <script type="text/javascript">
+
         $(document).ready(
             function(){
-                $("#jqtest").html("JQuery installed successfully!");
+
+                // Hide the form if a .deviceinfo file hasn't been entered yet.
+                // Entering a .deviceinfo automatically populates the serial field.
+                // Cannot check if a file has been previously entered after page reload.
+                // Django preserves form inputs on reload. Use these inputs as a workaround.
+                if($("#id_name").val() == ""){
+                    $("#ipad").hide();
+                }
+
+                $("#upload").change(function(){
+                    readFile(this);
+                });
+
+                $("#copy-model").click(function() {
+                    $("#id_model").val($("#old-model").text());
+                });
+
+                // Taken from http://jsfiddle.net/LvsYc/
+                function readFile(input) {
+                    if (input.files && input.files[0]) {
+                        var reader = new FileReader();
+
+                        reader.onload = function (e) {
+                            var contents = PlistParser.parse(e.target.result);
+                            //$("#type-check").text(PlistParser.serialize(contents));
+                            $("#id_name").val(contents['ownerName']);
+                            $("#id_manufacturer").val("Apple");
+                            //$("#id_model").val(""); # TODO Add button click copy if capacities match
+                            $("#id_serial").val(contents['deviceSerialNumber']);
+                            $("#id_wireless_mac").val(contents['deviceWiFiMACAddress']);
+                            $("#id_bluetooth_mac").val(contents['deviceBluetoothMACAddress']);
+                            var capacity = "<strong>Capacity:</strong> Greater than <strong>" + parseInt(contents['deviceCapacityKey']/1024/1024/1024,10) + "MB</strong>";
+                            $("#ipad-capacity").html(capacity);
+                            $("#ipad").show();
+
+                        };
+
+                        reader.readAsText(input.files[0]);
+                    }
+                }
+
             }
         );
+
     </script>
 
-    <p id="jqtest"></p>
+    {% with objects|first as object %}
 
-    <form action="" method="post">
-
-        {% csrf_token %}
-
-
+        {% comment %}
+        To make the asset name a link you must pass the context to this template.
+        http://blog.stanisla.us/2009/10/28/using-a-formwizard-in-the-django-admin/
+        {% endcomment %}
         <h2>Replace {{ object.name }}</h2>
-        <div>
-            {{ form }}
 
-            <input type="hidden" name="action" value="replace_ipad" />
-            <input type="submit" name="replace" value="Replace" style="color: #FF3333;" /> {# Add class="default" to look the same as admin #}
-            <input type="submit" name="cancel" value="Cancel" />
+        <form id="deviceinfo-form">
+            <label for="upload">Upload an iPad .deviceinfo file: </label>
+            <input type="file" id="upload" />
+        </form>
+
+        <div id="type-check"></div>
+
+        <div id="ipad">
+            <form action="" method="post">
+
+                {% csrf_token %}
+
+
+                {{ form.non_field_errors }}
+                <table>
+                    <tr><th></th><th>Old iPad</th><th>New iPad</th></tr>
+                    <tr><td>Asset name:</td><td>{{ object.name }}<td>{{ form.name.errors }}{{ form.name }}</td></tr>
+                    <tr><td>Manufacturer:</td><td>{{ object.manufacturer }}</td><td>{{ form.manufacturer.errors }}{{ form.manufacturer }}</td></tr>
+                    <tr><td>Model:</td><td><span id="old-model">{{ object.model }}</span></td><td>{{ form.model.errors }}{{ form.model }}</td><td><span id="ipad-capacity"></span><br>* <a id="copy-model" href="#">Copy Model</a> <strong> only if both iPads are the same!</strong></td></tr>
+                    <tr><td>Serial:</td><td>{{ object.serial }}</td><td>{{ form.serial.errors }}{{ form.serial }}</td></tr>
+                    <tr><td>WiFi MAC:</td><td>{{ object.wireless_mac }}</td><td>{{ form.wireless_mac.errors }}{{ form.wireless_mac }}</td></tr>
+                    <tr><td>Bluetooth MAC:</td><td>{{ object.bluetooth_mac }}</td><td>{{ form.bluetooth_mac.errors }}{{ form.bluetooth_mac }}</td></tr>
+                    <tr><td>Purchase date:</td><td>{{ object.purchase_date }}</td><td>{{ form.purchase_date.errors }}{{ form.purchase_date }}</td></tr>
+                    <tr><td>Ed cost:</td><td>{{ object.ed_cost }}</td><td>{{ form.ed_cost.errors }}{{ form.ed_cost }}</tr>
+                    <tr><td>FAR cost:</td><td>{{ object.far_cost }}</td><td>{{ form.far_cost.errors }}{{ form.far_cost }}</tr>
+                    <tr><td>Warranty Period:</td><td>{{ object.warranty_period }}</td><td>{{ form.warranty_period.errors }}{{ form.warranty_period }}</td></tr>
+                    <tr><td>FAR asset:</td><td>{{ object.far_asset }}</td><td>{{ form.far_asset.errors }}{{ form.far_asset }}</td></tr>
+                </table>
+
+                <div id="submit-buttons">
+                    <input type="hidden" name="action" value="replace_ipad" />
+                    <input type="submit" name="replace" value="Replace" style="color: #FF3333;" /> {# Add class="default" to look the same as admin #}
+                    <input type="submit" name="cancel" value="Cancel" />
+                </div>
+
+            </form>
         </div>
 
+    {% endwith %}
 
-        <p>The following assets will be deployed:</p>
-        <ul>
-            {% for object in objects %}
-                <li>
-                    <a href="{{ object.pk }}/">{{ object.name }}</a>
-                    {# Research what the below input achieves. Required by admin actions? #}
-                    <input type="hidden" name="_selected_action" value="{{ object.pk }}">
-                </li>
-            {% endfor %}
-        </ul>
-
-    </form>
 {% endblock %}

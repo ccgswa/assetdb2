@@ -332,7 +332,6 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
 
         # asset = queryset[0]
 
-
     # TODO Complete/Fix the replace iPad function.
     @takes_instance_or_queryset
     def replace_ipad(self, request, queryset):
@@ -345,13 +344,27 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
             form = iPadReplacementForm(data=request.POST, files=request.FILES)
 
             if form.is_valid():
-                asset = queryset[0]
-                self.message_user(request, asset.__str__(), level=messages.SUCCESS)
+                old_asset = queryset[0]
+                # TODO Complete this section. Check if new asset already exists!
+                # new_asset = Asset(name=form.cleaned_data['name'],
+                #                   created_by=request.user,
+                #                   incident=form.cleaned_data['deploy_to'],
+                #                   recipient=form.cleaned_data['recipient'],
+                #                   transfer='internal',
+                #                   notes=notes)
+
+                new_asset.save();
+                self.message_user(request,
+                                  "Successfully replaced " + old_asset.__str__() + " with " + new_asset.__str__()
+                                  , level=messages.SUCCESS)
                 return
 
         else:
             if len(queryset) > 1:
                 self.message_user(request, "This action cannot be applied to multiple assets.", level=messages.ERROR)
+                return
+            elif queryset[0].active:
+                self.message_user(request, "You cannot replace an active asset. Decommission first.", level=messages.ERROR)
                 return
             else:
                 old_asset = queryset[0]
@@ -438,10 +451,10 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
     deploy.label = "Deploy"
 
     return_ict.short_description = "Return selected assets"
-    return_ict.label = "Return"
+    return_ict.label = "Return to ICT"
 
     replace_ipad.short_description = "Replace iPads"
-    replace_ipad.label = "Replace"
+    replace_ipad.label = "Replace iPad"
 
     pass
 

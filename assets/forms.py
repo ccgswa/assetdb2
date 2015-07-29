@@ -1,4 +1,5 @@
 from django import forms
+from django.forms import ModelForm
 from assets.models import Asset
 
 
@@ -18,8 +19,8 @@ class AssetDecommissionForm(forms.Form):
         ('damaged', 'Damaged'), ('lost', 'Lost or Stolen'), ('disposed', 'Disposed'),
     )
     location = forms.ChoiceField(label='Incident', widget=forms.RadioSelect, choices=location_choices, initial='damaged')
-    recipient = forms.CharField(label='Recipient', max_length=100)
-    notes = forms.CharField(label='Notes', max_length=100)
+    recipient = forms.CharField(label='Recipient', max_length=200)
+    notes = forms.CharField(label='Notes', max_length=200)
 
 
 class AssetDeploymentForm(forms.Form):
@@ -32,8 +33,8 @@ class AssetDeploymentForm(forms.Form):
         ('ccgs', 'CCGS Main Campus'), ('kooringal', 'Kooringal Campus'), ('none', '--------------------'),
     )
     location = forms.ChoiceField(label='Location', choices=location_choices, initial='ccgs')
-    exact_location = forms.CharField(label='Year/Dept/Room', max_length=100, required=False)
-    replacing = forms.CharField(label='Replacement for', max_length=100, required=False)
+    exact_location = forms.CharField(label='Year/Dept/Room', max_length=200, required=False)
+    replacing = forms.CharField(label='Replacement for', max_length=200, required=False)
 
 
 class AssetReplacementForm1(forms.Form):
@@ -56,21 +57,19 @@ class AssetReplacementForm2(forms.Form):
     active = forms.BooleanField(label='Active')
 
 
-class iPadReplacementForm(forms.Form):
+class iPadReplacementForm(ModelForm):
 
-    class Media:
-        js = ('assets/js/upload.js',)
-
-    config_file = forms.FileField(label='New iPad .deviceinfo file', required=False)
-    new_ite = forms.CharField(label='Replacement ITE:')
-    manufacturer = forms.CharField(label='Manufacturer')
-    model = forms.CharField(label='Model')
-    serial = forms.CharField(label='Serial')
-    wireless_mac = forms.CharField(label='Wireless MAC')
-    bluetooth_mac = forms.CharField(label='Bluetooth MAC')
-    purchase_date = forms.DateField(label='Purchase Date')
-    ed_cost= forms.CharField(label='Educational Cost')
-    far_cost = forms.CharField(label='FAR Cost')
-    warranty_period = forms.CharField(label='Warranty Period')
-    far_asset = forms.BooleanField(label='FAR Asset')
-    active = forms.BooleanField(label='Active')
+    class Meta:
+        model = Asset
+        fields = ['name',
+                  'manufacturer',
+                  'model',
+                  'serial',
+                  'wireless_mac',
+                  'bluetooth_mac',
+                  'purchase_date',
+                  'ed_cost',
+                  'far_cost',
+                  'warranty_period',
+                  'far_asset',
+                  'active']

@@ -1,0 +1,34 @@
+#ipad {
+
+}
+
+#ipad {
+
+}
+
+#deviceinfo-form {
+
+}
+
+#json {
+
+}
+
+#new-ipad {
+
+}
+
+#old-pad {
+
+}
+
+
+#old-ipad, #new-ipad {
+    width: 300px;
+    border:1px solid black;
+    float:left;
+}
+
+#submit-buttons {
+    display: block;
+}
