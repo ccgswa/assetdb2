@@ -354,9 +354,23 @@ def query_yes_no(question, default="yes"):
                              "(or 'y' or 'n').\n")
 
 
+def import_admin_log():
+    os.chdir(csv_path)
+    admin_log_csv = 'django_admin_log.csv'
+
+    with open(admin_log_csv, 'rb') as f:
+        reader = csv.reader(f)
+        reader.next()
+        for row in reader:
+                asset = Asset.objects.get(pk=int(row[1]))
+                asset.ip_address = row[2]
+                asset.save()
+    pass
+
+
 def import_all():
 
-    if query_yes_no("Have you removed \'auto_now_add=True\' from the AssetHistory \'created_by'\ field?"):
+    if query_yes_no("Have you removed \'auto_now_add=True\' from the AssetHistory \'created_by\' field?"):
         print 'Importing asset data...'
         import_assets()
         print 'Importing user data...'

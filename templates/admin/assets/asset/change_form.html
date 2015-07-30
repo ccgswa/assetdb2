@@ -1,4 +1,16 @@
-{% extends "admin/change_form.html" %}
+{% extends "django_object_actions/change_form.html" %}
+
+{% comment %}
+{% block object-tools-items %}
+    <li class="objectaction-item">
+        <a href='http://propus.ccgs.wa.edu.au/ipad/replace-ipad.py'>
+            Replace iPad
+        </a>
+    </li>
+    {{ block.super }}
+{% endblock %}
+
+{% endcomment %}
 
 {% comment %}
 {% block submit_buttons_top %}{{ block.super }}<div class="submit-row"><input type="submit" value="Decommission" name="_decommission" /></div>{% endblock %}

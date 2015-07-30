@@ -19,6 +19,9 @@ from widgets import ExcelDateWidget
 
 # TODO Find out why Reversion ignores custom saveformset function override
 
+# TODO Leave Asset History comment when new asset created via Add Asset.
+
+
 # Inline for displaying asset history on Asset admin page.
 class HistoryInline(admin.StackedInline):
     model = AssetHistory
@@ -26,7 +29,7 @@ class HistoryInline(admin.StackedInline):
     verbose_name_plural = 'Asset History'
     can_delete = False
     template = 'admin/assets/assethistory/edit_inline/stacked.html'
-    fields = ('recipient', 'notes',)
+    fields = ('notes',)
     extra = 1
 
     formfield_overrides = {
@@ -67,13 +70,13 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
         }
 
 #   For custom change_form template (i.e. override title etc)
-#   change_form_template = 'admin/assets/asset/change_form.html'
+    change_form_template = 'admin/assets/asset/change_form.html'
     change_list_template = 'admin/assets/asset/change_list.html'
 
     form = AssetAdminForm
 
-    search_fields = ['name', 'serial', 'wireless_mac']
-    list_display = ('name', 'serial', 'owner', 'location', 'exact_location', 'active', 'purchase_date')
+    search_fields = ['name', 'serial', 'model', 'exact_location', 'owner', 'wired_mac', 'wireless_mac', 'bluetooth_mac']
+    list_display = ('name', 'model', 'serial', 'owner', 'location', 'exact_location', 'active', 'purchase_date')
 #   readonly_fields = ['created_date', 'created_by'] # Don't appear on change_form page. DEPRECATED. USING REVERSION
     fieldsets = (
         (None, {
@@ -83,7 +86,6 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
                        ('wireless_mac', 'wired_mac', 'bluetooth_mac'))
         }),
         ('Financial', {
-            'classes': ('collapse',),
             'fields': (('far_asset', 'far_cost', 'ed_cost'), ('purchase_date', 'warranty_period'))
         }),
 
@@ -231,6 +233,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
                             notes += ' as replacement for %s' % form.cleaned_data['replacing']
                         asset.location = form.cleaned_data['location']
                         asset.owner = form.cleaned_data['recipient']
+                        asset.exact_location = form.cleaned_data['exact_location']
                         ah = AssetHistory(asset=asset,
                                           created_by=request.user,
                                           incident=form.cleaned_data['deploy_to'],
@@ -476,7 +479,7 @@ class AssetHistoryAdmin(reversion.VersionAdmin, ImportExportModelAdmin):
     """
 
     list_display = ('asset', 'incident', 'created_by', 'created_date', 'notes')
-    search_fields = ['asset', 'notes']
+    search_fields = ['asset__name', 'notes', 'created_by__username']
 
     # Integrate ImportExport functionality for AssetAdmin
     resource_class = AssetHistoryResource
