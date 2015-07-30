@@ -83,17 +83,16 @@
                 {{ form.non_field_errors }}
                 <table>
                     <tr><th></th><th>Old iPad</th><th>New iPad</th></tr>
-                    <tr><td>Asset name:</td><td>{{ object.name }}<td>{{ form.name.errors }}{{ form.name }}</td></tr>
-                    <tr><td>Manufacturer:</td><td>{{ object.manufacturer }}</td><td>{{ form.manufacturer.errors }}{{ form.manufacturer }}</td></tr>
-                    <tr><td>Model:</td><td><span id="old-model">{{ object.model }}</span></td><td>{{ form.model.errors }}{{ form.model }}</td><td><span id="ipad-capacity"></span><br>* <a id="copy-model" href="#">Copy Model</a> <strong> only if both iPads are the same!</strong></td></tr>
-                    <tr><td>Serial:</td><td>{{ object.serial }}</td><td>{{ form.serial.errors }}{{ form.serial }}</td></tr>
-                    <tr><td>WiFi MAC:</td><td>{{ object.wireless_mac }}</td><td>{{ form.wireless_mac.errors }}{{ form.wireless_mac }}</td></tr>
-                    <tr><td>Bluetooth MAC:</td><td>{{ object.bluetooth_mac }}</td><td>{{ form.bluetooth_mac.errors }}{{ form.bluetooth_mac }}</td></tr>
-                    <tr><td>Purchase date:</td><td>{{ object.purchase_date }}</td><td>{{ form.purchase_date.errors }}{{ form.purchase_date }}</td></tr>
-                    <tr><td>Ed cost:</td><td>{{ object.ed_cost }}</td><td>{{ form.ed_cost.errors }}{{ form.ed_cost }}</tr>
-                    <tr><td>FAR cost:</td><td>{{ object.far_cost }}</td><td>{{ form.far_cost.errors }}{{ form.far_cost }}</tr>
-                    <tr><td>Warranty Period:</td><td>{{ object.warranty_period }}</td><td>{{ form.warranty_period.errors }}{{ form.warranty_period }}</td></tr>
-                    <tr><td>FAR asset:</td><td>{{ object.far_asset }}</td><td>{{ form.far_asset.errors }}{{ form.far_asset }}</td></tr>
+                    <tr><td>Asset name:</td><td>{{ object.name }}<td>{{ form.name }}{{ form.name.errors }}</td></tr>
+                    <tr><td>Manufacturer:</td><td>{{ object.manufacturer }}</td><td>{{ form.manufacturer }}{{ form.manufacturer.errors }}</td></tr>
+                    <tr><td>Model:</td><td><span id="old-model">{{ object.model }}</span></td><td>{{ form.model }}{{ form.model.errors }}</td><td><span id="ipad-capacity"></span><br>* <a id="copy-model" href="#">Copy Model</a> <strong> only if both iPads are the same!</strong></td></tr>
+                    <tr><td>Serial:</td><td>{{ object.serial }}</td><td>{{ form.serial }}{{ form.serial.errors }}</td></tr>
+                    <tr><td>WiFi MAC:</td><td>{{ object.wireless_mac }}</td><td>{{ form.wireless_mac }}{{ form.wireless_mac.errors }}</td></tr>
+                    <tr><td>Bluetooth MAC:</td><td>{{ object.bluetooth_mac }}</td><td>{{ form.bluetooth_mac }}{{ form.bluetooth_mac.errors }}</td></tr>
+                    <tr><td>Purchase date:</td><td>{{ object.purchase_date|date:"Y-m-d" }}</td><td>{{ form.purchase_date }}{{ form.purchase_date.errors }}</td></tr>
+                    <tr><td>Ed cost:</td><td>{{ object.ed_cost }}</td><td>{{ form.ed_cost }}{{ form.ed_cost.errors }}</tr>
+                    <tr><td>FAR cost:</td><td>{{ object.far_cost }}</td><td>{{ form.far_cost }}{{ form.far_cost.errors }}</tr>
+                    <tr><td>Warranty Period:</td><td>{{ object.warranty_period }}</td><td>{{ form.warranty_period }}{{ form.warranty_period.errors }}</td></tr>
                 </table>
 
                 <div id="submit-buttons">

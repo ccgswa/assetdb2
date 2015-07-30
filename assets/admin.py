@@ -1,13 +1,14 @@
 from django.db import models, transaction
-from django import forms
 from django.contrib import admin
 from django.contrib import messages
+from django.http import HttpResponseRedirect
 from models import Asset, AssetHistory
-from import_export import resources, fields, widgets
+from import_export import resources
 from import_export.admin import ImportExportModelAdmin
 from django_object_actions import DjangoObjectActions, takes_instance_or_queryset
 from .forms import *
 from django.shortcuts import render
+from django.core.urlresolvers import reverse
 import reversion
 import plistlib
 from widgets import ExcelDateWidget
@@ -16,8 +17,7 @@ from widgets import ExcelDateWidget
 
 # TODO Add "Edit" button to toggle 'readonly' attribute for certain fields in change_form.
 
-# TODO Add CSS and JQuery to admin classes using the Media inner class https://docs.djangoproject.com/en/dev/ref/contrib/admin/#modeladmin-asset-definitions
-
+# TODO Find out why Reversion ignores custom saveformset function override
 
 # Inline for displaying asset history on Asset admin page.
 class HistoryInline(admin.StackedInline):
@@ -54,6 +54,7 @@ class AssetResource(resources.ModelResource):
         model = Asset
 
 
+# TODO Simplify admin message construction using string interpolation
 class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelAdmin):
     """
     AssetAdmin
@@ -90,13 +91,21 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
 
     # save_on_top = True
     actions = ['decommission', 'deploy', 'return_ict']
-    objectactions = ('decommission', 'replace_ipad', 'return_ict', 'deploy',)
+    objectactions = ('replace_ipad', 'decommission', 'return_ict', 'deploy',)
     inlines = [
         HistoryInline,
     ]
 
     # Integrate ImportExport functionality for AssetAdmin
     resource_class = AssetResource
+
+    # Custom save to set created_by for AssetHistory inline instances
+    def save_formset(self, request, form, formset, change):
+        instances = formset.save(commit=False)
+        for instance in instances:
+            instance.created_by = request.user
+            instance.save()
+        formset.save_m2m()
 
     # Django Admin action to decommission an asset.
     # The django-object-actions decorator makes it available in change_form template.
@@ -132,11 +141,11 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
                                           recipient=form.cleaned_data['recipient'],
                                           transfer='outgoing',
                                           notes=form.cleaned_data['notes'])
+                        ah.save()
 
                         # Save model changes and create reversion instance
                         with transaction.atomic(), reversion.create_revision():
                             asset.save()
-                            ah.save()
                             reversion.set_user(request.user)
                             reversion.set_comment('Asset decommissioned. Recipient: %s Note: %s' %
                                                   (form.cleaned_data['recipient'],
@@ -173,16 +182,17 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
 
         # We've submitted a different form (i.e. change list/form). Go to the decommission form.
         else:
-            # Create a new decommission form
-            form = AssetDecommissionForm()
+            if not queryset[0].active and len(queryset) == 1:
+                self.message_user(request, "This asset has already been deactivated.",
+                                  level=messages.ERROR)
+                return
+            else:
+                # Create a new decommission form
+                form = AssetDecommissionForm()
 
         # Render the response to the http request
         return render(request, 'admin/assets/decommission.html',
                       {'objects': queryset, 'form': form})
-
-    # Names for django action tools
-    decommission.short_description = "Decommission selected assets"
-    decommission.label = "Decommission"
 
     # Django Admin action to decommission an asset.
     # The django-object-actions decorator makes it available in change_form template.
@@ -210,8 +220,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
                 # Use validated data to deploy selected assets
                 for asset in queryset:
 
-                    if asset.active and asset.owner == 'ICT Services':
-                        notes = ''
+                    if asset.active and asset.owner.lower() == 'ict services':
                         deploy_type = ''
                         if form.cleaned_data['deploy_to'] == 'deploy_staff':
                             deploy_type = 'staff member'
@@ -228,17 +237,17 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
                                           recipient=form.cleaned_data['recipient'],
                                           transfer='internal',
                                           notes=notes)
+                        ah.save()
 
                         # Save model changes and create reversion instance
                         with transaction.atomic(), reversion.create_revision():
                             asset.save()
-                            ah.save()
                             reversion.set_user(request.user)
                             reversion.set_comment(notes)
                     else:
                         if not asset.active:
                             currently_inactive += 1
-                        elif asset.owner != 'ICT Services':
+                        elif asset.owner.lower() != 'ict services':
                             currently_deployed += 1
 
                         if (currently_inactive == 1 and currently_deployed == 0) or (currently_inactive == 0 and currently_deployed == 1):
@@ -279,60 +288,18 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
 
         # We've submitted a different form (i.e. change list/form). Go to the decommission form.
         else:
-            # Create a new deployment form
-            form = AssetDeploymentForm()
+            if not queryset[0].active and len(queryset) == 1:
+                self.message_user(request, "You cannot deploy an inactive asset.",
+                                  level=messages.ERROR)
+                return
+            else:
+                # Create a new deployment form
+                form = AssetDeploymentForm()
+
         # Render the empty form on a new page passing selected assets and form object fields as dictionaries
         return render(request, 'admin/assets/deploy.html',
                       {'objects': queryset, 'form': form})
 
-    # TODO Complete/Fix the replace iPad function.
-    @takes_instance_or_queryset
-    def replace_ipad_multiform(self, request, queryset):
-
-        template = 'admin/assets/replace_ipad1.html'
-
-        if 'cancel' in request.POST:
-            self.message_user(request, "Replacement cancelled.", level=messages.ERROR)
-            return
-
-        elif 'ipad_config' in request.POST:
-
-            form = AssetReplacementForm1(request.POST)
-
-            if form.is_valid():
-                # Process the file data and save the data for use on the second page
-                pass
-
-            # Create empty form to pass to render function
-            template = 'admin/assets/replace_ipad2.html'
-            form = AssetReplacementForm2()
-            print 'First form submitted'
-            # Don't return
-
-        elif 'replace' in request.POST:
-
-            form = AssetReplacementForm2(request.POST)
-            if form.is_valid():
-                print 'Second form submitted'
-                # Do stuff.
-                return
-
-        else:
-            form = AssetReplacementForm1()
-
-        return render(request, template,
-                      {'objects': queryset, 'form': form})
-
-        # if len(queryset) > 1:
-        #     self.message_user(request, "Cannot replace multiple assets. "
-        #                                "Try using 'Replace' from an individual asset\'s page.", level=messages.ERROR)
-        # else:
-        #     pass
-        # i = plistlib.readPlist(form['difile'].file)
-
-        # asset = queryset[0]
-
-    # TODO Complete/Fix the replace iPad function.
     @takes_instance_or_queryset
     def replace_ipad(self, request, queryset):
 
@@ -341,39 +308,82 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
             return
 
         elif 'replace' in request.POST:
-            form = iPadReplacementForm(data=request.POST, files=request.FILES)
+
+            form = iPadReplacementForm(data=request.POST)
 
             if form.is_valid():
                 old_asset = queryset[0]
-                # TODO Complete this section. Check if new asset already exists!
-                # new_asset = Asset(name=form.cleaned_data['name'],
-                #                   created_by=request.user,
-                #                   incident=form.cleaned_data['deploy_to'],
-                #                   recipient=form.cleaned_data['recipient'],
-                #                   transfer='internal',
-                #                   notes=notes)
+                # Model specification already prevents assets with the same name. Check anyway!
+                new_asset, created = Asset.objects.get_or_create(name=form.cleaned_data['name'])
 
-                new_asset.save();
-                self.message_user(request,
-                                  "Successfully replaced " + old_asset.__str__() + " with " + new_asset.__str__()
-                                  , level=messages.SUCCESS)
-                return
+                if not created:
+                    self.message_user(request, "New asset " + new_asset.__str__() + " already exists!",
+                                      level=messages.ERROR)
+                else:
+                    new_asset.manufacturer = form.cleaned_data['manufacturer']
+                    new_asset.model = form.cleaned_data['model']
+                    new_asset.serial = form.cleaned_data['serial']
+                    new_asset.location = 'ccgs'
+                    new_asset.exact_location = 'ICT Services'
+                    new_asset.owner = 'ICT Services'
+                    new_asset.purchase_date = form.cleaned_data['purchase_date']
+                    new_asset.invoices = ''
+                    new_asset.wired_mac = ''
+                    new_asset.wireless_mac = form.cleaned_data['wireless_mac']
+                    new_asset.bluetooth_mac = form.cleaned_data['bluetooth_mac']
+                    new_asset.far_asset = True
+                    new_asset.far_cost = form.cleaned_data['far_cost']
+                    new_asset.ed_cost = form.cleaned_data['ed_cost']
+                    new_asset.warranty_period = form.cleaned_data['warranty_period']
+                    new_asset.ip_address = ''
+                    new_asset.active = True
+
+                    old_ah = AssetHistory(asset=old_asset,
+                                          created_by=request.user,
+                                          incident='general',
+                                          recipient='ICT Services',
+                                          transfer='internal',
+                                          notes='Replaced in stock by %s (%s)' % (new_asset.name, new_asset.serial))
+
+                    new_ah = AssetHistory(asset=new_asset,
+                                          created_by=request.user,
+                                          incident='general',
+                                          recipient='ICT Services',
+                                          transfer='incoming',
+                                          notes='Received as replacement for %s (%s)' %
+                                                (old_asset.name, old_asset.serial))
+
+                    old_ah.save()
+                    new_ah.save()
+
+                    # Save model changes and create reversion instance
+                    with transaction.atomic(), reversion.create_revision():
+                        new_asset.save()
+                        reversion.set_user(request.user)
+                        reversion.set_comment('Received as replacement for %s (%s)' %
+                                              (old_asset.name, old_asset.serial))
+
+                    # TODO Add link to new asset in message
+                    self.message_user(request,
+                                      "Successfully replaced " + old_asset.__str__() + " with " + new_asset.__str__(),
+                                      level=messages.SUCCESS)
+
+                # Use HttpResponseRedirect("../%s" % obj.id]) to redirect to an individual asset change_form
+                return HttpResponseRedirect(reverse("admin:assets_asset_changelist"))
 
         else:
             if len(queryset) > 1:
                 self.message_user(request, "This action cannot be applied to multiple assets.", level=messages.ERROR)
                 return
             elif queryset[0].active:
-                self.message_user(request, "You cannot replace an active asset. Decommission first.", level=messages.ERROR)
+                self.message_user(request, "You cannot replace an active asset. Decommission it first.", level=messages.ERROR)
                 return
             else:
                 old_asset = queryset[0]
                 form = iPadReplacementForm(initial={'purchase_date': old_asset.purchase_date,
                                                     'ed_cost': old_asset.ed_cost,
                                                     'far_cost': old_asset.far_cost,
-                                                    'warranty_period': old_asset.warranty_period,
-                                                    'far_asset': True,
-                                                    'active': True})
+                                                    'warranty_period': old_asset.warranty_period})
 
         return render(request, 'admin/assets/replace_ipad.html',
                       {'objects': queryset, 'form': form})
@@ -387,61 +397,57 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
         currently_inactive = 0
         error_bit = ""
 
-        for asset in queryset:
-            # TODO Return: Add logic (and appropriate error messaging) for when an asset is already owned by ICT Services
-            if asset.active:
-                notes = 'Returned to ICT Services by %s' % asset.owner
-                asset.location = 'ccgs'
-                asset.exact_location = 'ICT Services'
-                asset.owner = 'ICT Services'
-                ah = AssetHistory(asset=asset,
-                                  created_by=request.user,
-                                  incident='return',
-                                  recipient='ICT Services',
-                                  transfer='internal',
-                                  notes=notes)
-
-                # Save model changes and create reversion instance
-                with transaction.atomic(), reversion.create_revision():
-                    asset.save()
+        if len(queryset) == 1 and not queryset[0].active:
+            self.message_user(request, "You cannot return an inactive asset.", level=messages.ERROR)
+            return
+        else:
+            for asset in queryset:
+                # TODO Add logic (and appropriate error messaging) for when an asset is already owned by ICT Services
+                if asset.active:
+                    notes = 'Returned to ICT Services by %s' % asset.owner
+                    asset.location = 'ccgs'
+                    asset.exact_location = 'ICT Services'
+                    asset.owner = 'ICT Services'
+                    ah = AssetHistory(asset=asset,
+                                      created_by=request.user,
+                                      incident='return',
+                                      recipient='ICT Services',
+                                      transfer='internal',
+                                      notes=notes)
                     ah.save()
-                    reversion.set_user(request.user)
-                    reversion.set_comment(notes)
-            else:
-                currently_inactive += 1
-                if currently_inactive == 1:
-                    error_bit += asset.name
+
+                    # Save model changes and create reversion instance
+                    with transaction.atomic(), reversion.create_revision():
+                        asset.save()
+                        reversion.set_user(request.user)
+                        reversion.set_comment(notes)
                 else:
-                    error_bit += ", %s" % asset.name
-
-                rows_updated -= currently_inactive
-
-                # Construct message to user based on how many assets were updated
-                if rows_updated == 0:
-                    self.message_user(request, "Cannot return inactive assets.", level=messages.ERROR)
-                else:
-                    if rows_updated == 1:
-                        message_bit = "%s was" % queryset[0].name
-                    else:
-                        message_bit = "%s assets were" % rows_updated
-                    self.message_user(request, "%s returned to ICT Services." % message_bit,
-                                      level=messages.SUCCESS)
-
-                # Generate error string
-                if currently_inactive > 0:
+                    currently_inactive += 1
                     if currently_inactive == 1:
-                        error_bit += " is inactive."
-                    elif currently_inactive > 1:
-                        error_bit += " are inactive."
-                    self.message_user(request, "%s Cannot return." % error_bit, level=messages.WARNING)
+                        error_bit += asset.name
+                    else:
+                        error_bit += ", %s" % asset.name
 
-    # Custom save to set created_by for AssetHistory inline instances
-    def save_formset(self, request, form, formset, change):
-        instances = formset.save(commit=False)
-        for instance in instances:
-            instance.created_by = request.user
-            instance.save()
-        formset.save_m2m()
+                    rows_updated -= currently_inactive
+
+                    # Construct message to user based on how many assets were updated
+                    if rows_updated == 0:
+                        self.message_user(request, "Cannot return inactive assets.", level=messages.ERROR)
+                    else:
+                        if rows_updated == 1:
+                            message_bit = "%s was" % queryset[0].name
+                        else:
+                            message_bit = "%s assets were" % rows_updated
+                        self.message_user(request, "%s returned to ICT Services." % message_bit,
+                                          level=messages.SUCCESS)
+
+                    # Generate error string
+                    if currently_inactive > 0:
+                        if currently_inactive == 1:
+                            error_bit += " is inactive."
+                        elif currently_inactive > 1:
+                            error_bit += " are inactive."
+                        self.message_user(request, "%s Cannot return." % error_bit, level=messages.WARNING)
 
     # Names for django action tools
     decommission.short_description = "Decommission selected assets"
@@ -455,8 +461,6 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
 
     replace_ipad.short_description = "Replace iPads"
     replace_ipad.label = "Replace iPad"
-
-    pass
 
 
 # For importing and exporting Asset History data

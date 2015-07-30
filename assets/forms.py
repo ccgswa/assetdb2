@@ -2,7 +2,7 @@ from django import forms
 from django.forms import ModelForm
 from assets.models import Asset
 
-
+# Template example of a model form
 class AssetAdminForm(forms.ModelForm):
 
     class Meta:
@@ -20,7 +20,7 @@ class AssetDecommissionForm(forms.Form):
     )
     location = forms.ChoiceField(label='Incident', widget=forms.RadioSelect, choices=location_choices, initial='damaged')
     recipient = forms.CharField(label='Recipient', max_length=200)
-    notes = forms.CharField(label='Notes', max_length=200)
+    notes = forms.CharField(label='Notes', widget=forms.Textarea)
 
 
 class AssetDeploymentForm(forms.Form):
@@ -37,26 +37,6 @@ class AssetDeploymentForm(forms.Form):
     replacing = forms.CharField(label='Replacement for', max_length=200, required=False)
 
 
-class AssetReplacementForm1(forms.Form):
-    config_file = forms.FileField(label='New iPad .deviceinfo file')
-    replacing = forms.CharField(label='Replacement for', required=False)
-
-
-class AssetReplacementForm2(forms.Form):
-    new_ite = forms.CharField(label='Replacement for')
-    manufacturer = forms.CharField(label='Manufacturer')
-    model = forms.CharField(label='Model')
-    serial = forms.CharField(label='Serial')
-    wireless_mac = forms.CharField(label='Wireless MAC')
-    bluetooth_mac = forms.CharField(label='Bluetooth MAC')
-    purchase_date = forms.DateField(label='Purchase Date')
-    ed_cost= forms.CharField(label='Educational Cost')
-    far_cost = forms.CharField(label='FAR Cost')
-    warranty_period = forms.CharField(label='Warranty Period')
-    far_asset = forms.BooleanField(label='FAR Asset')
-    active = forms.BooleanField(label='Active')
-
-
 class iPadReplacementForm(ModelForm):
 
     class Meta:
@@ -71,5 +51,4 @@ class iPadReplacementForm(ModelForm):
                   'ed_cost',
                   'far_cost',
                   'warranty_period',
-                  'far_asset',
                   'active']
