@@ -21,6 +21,8 @@ from widgets import ExcelDateWidget
 
 # TODO Leave Asset History comment when new asset created via Add Asset.
 
+# TODO Make replace_ipad appear only on iPad pages
+
 
 # Inline for displaying asset history on Asset admin page.
 class HistoryInline(admin.StackedInline):
@@ -291,13 +293,19 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
 
         # We've submitted a different form (i.e. change list/form). Go to the decommission form.
         else:
-            if not queryset[0].active and len(queryset) == 1:
-                self.message_user(request, "You cannot deploy an inactive asset.",
-                                  level=messages.ERROR)
-                return
-            else:
-                # Create a new deployment form
-                form = AssetDeploymentForm()
+            if len(queryset) == 1:
+                if not queryset[0].active:
+                    self.message_user(request, "You cannot deploy an inactive asset.",
+                                      level=messages.ERROR)
+                    return
+                elif queryset[0].owner.lower() != 'ict services':
+                    self.message_user(request, "This asset is not owned by ICT Services. "
+                                               "You must return to ICT before deploying again.",
+                                      level=messages.ERROR)
+                    return
+
+            # Create a new deployment form
+            form = AssetDeploymentForm()
 
         # Render the empty form on a new page passing selected assets and form object fields as dictionaries
         return render(request, 'admin/assets/deploy.html',

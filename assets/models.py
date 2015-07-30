@@ -26,7 +26,6 @@ class Asset(models.Model):
         ('disposed', 'Disposed'),
         ('lost', 'Lost or Stolen')
     )
-    # Merge with location (legacy) on import
     location = models.CharField(max_length=200, choices=LOCATION_CHOICES, default='none')
     exact_location = models.CharField('Year/Dept/Room', db_index=True, max_length=200, blank=True)
     owner = models.CharField(max_length=200, db_index=True, blank=True)
