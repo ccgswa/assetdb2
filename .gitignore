@@ -64,3 +64,9 @@ assetdb2/settings_secret.py
 
 # Code snippets
 snippets.py
+
+# Migrations folder
+migrations/
+
+# Other
+*.DS_Store
