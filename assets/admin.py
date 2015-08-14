@@ -1,8 +1,7 @@
 from django.db import models, transaction
-from django.contrib import admin
 from django.contrib import messages
 from django.http import HttpResponseRedirect
-from models import Asset, AssetHistory
+from models import AssetHistory
 from import_export import resources
 from import_export.admin import ImportExportModelAdmin
 from django_object_actions import DjangoObjectActions, takes_instance_or_queryset
@@ -21,8 +20,6 @@ import reversion
 # TODO Leave Asset History comment when new asset created via Add Asset.
 
 # TODO Make replace_ipad appear only on iPad pages
-
-# TODO Complete year filter to match old asset database
 
 # TODO appear to be working efficiently
 
@@ -81,7 +78,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
 
     search_fields = ['name', 'serial', 'model', 'exact_location', 'owner', 'wired_mac', 'wireless_mac', 'bluetooth_mac']
     list_display = ('name', 'model', 'owner', 'serial', 'wireless_mac', 'location', 'exact_location', 'active', 'purchase_date')
-    list_filter = ('active', YearPurchasedListFilter, 'far_asset')
+    list_filter = ('active', ModelFilter, YearPurchasedListFilter, 'far_asset')
 #   readonly_fields = ['created_date', 'created_by'] # Don't appear on change_form page. DEPRECATED. USING REVERSION
     fieldsets = (
         (None, {
