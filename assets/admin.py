@@ -7,11 +7,10 @@ from import_export import resources
 from import_export.admin import ImportExportModelAdmin
 from django_object_actions import DjangoObjectActions, takes_instance_or_queryset
 from .forms import *
+from .filters import *
 from django.shortcuts import render
 from django.core.urlresolvers import reverse
 import reversion
-from datetime import date
-
 
 # TODO Explore further customisations https://docs.djangoproject.com/en/1.8/intro/tutorial02/#customizing-your-application-s-templates
 
@@ -24,51 +23,8 @@ from datetime import date
 # TODO Make replace_ipad appear only on iPad pages
 
 # TODO Complete year filter to match old asset database
-class YearPurchasedListFilter(admin.SimpleListFilter):
-    # Human-readable title which will be displayed in the
-    # right admin sidebar just above the filter options.
-    title = ('decade born')
 
-    # Parameter for the filter that will be used in the URL query.
-    parameter_name = 'purchase date'
-
-    def lookups(self, request, model_admin):
-        """
-        Returns a list of tuples. The first element in each
-        tuple is the coded value for the option that will
-        appear in the URL query. The second element is the
-        human-readable name for the option that will appear
-        in the right sidebar.
-        """
-
-        current_year = date.today().year
-
-        years = set([str(year) for year in range(current_year, current_year-11, -1)])
-        year_list = [(str(year), str(year)) for year in years]
-        year_list.append(('older', 'older'))
-        for item in year_list:
-            print item
-
-        return year_list
-
-    def queryset(self, request, queryset):
-        """
-        Returns the filtered queryset based on the value
-        provided in the query string and retrievable via
-        `self.value()`.
-        """
-        # Filter the query set based on purchase year selected
-
-        if self.value() == 'older':
-            return queryset
-
-        elif self.value():
-            year = int(self.value())
-            return queryset.filter(purchase_date__gte=date(year, 1, 1),
-                                   purchase_date__lte=date(year, 12, 31))
-        else:
-            return queryset
-
+# TODO appear to be working efficiently
 
 # Inline for displaying asset history on Asset admin page.
 class HistoryInline(admin.StackedInline):
@@ -125,7 +81,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
 
     search_fields = ['name', 'serial', 'model', 'exact_location', 'owner', 'wired_mac', 'wireless_mac', 'bluetooth_mac']
     list_display = ('name', 'model', 'owner', 'serial', 'wireless_mac', 'location', 'exact_location', 'active', 'purchase_date')
-    list_filter = ('active', 'purchase_date', YearPurchasedListFilter, 'far_asset')
+    list_filter = ('active', YearPurchasedListFilter, 'far_asset')
 #   readonly_fields = ['created_date', 'created_by'] # Don't appear on change_form page. DEPRECATED. USING REVERSION
     fieldsets = (
         (None, {
