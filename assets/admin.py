@@ -16,12 +16,14 @@ import reversion
 # TODO Add "Edit" button to toggle 'readonly' attribute for certain fields in change_form.
 
 # TODO Find out why Reversion ignores custom saveformset function override
+# https://github.com/etianen/django-reversion/issues/339
 
 # TODO Leave Asset History comment when new asset created via Add Asset.
 
 # TODO Make replace_ipad appear only on iPad pages
 
 # TODO appear to be working efficiently
+
 
 # Inline for displaying asset history on Asset admin page.
 class HistoryInline(admin.StackedInline):
@@ -76,19 +78,18 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
 
     form = AssetAdminForm
 
-    search_fields = ['name', 'serial', 'model', 'exact_location', 'owner', 'wired_mac', 'wireless_mac', 'bluetooth_mac']
+    search_fields = ['name', 'serial', 'model', 'manufacturer', 'exact_location', 'owner', 'wired_mac', 'wireless_mac', 'bluetooth_mac']
     list_display = ('name', 'model', 'owner', 'serial', 'wireless_mac', 'location', 'exact_location', 'active', 'purchase_date')
-    list_filter = ('active', ModelFilter, YearPurchasedListFilter, 'far_asset')
-#   readonly_fields = ['created_date', 'created_by'] # Don't appear on change_form page. DEPRECATED. USING REVERSION
+    list_filter = (ActiveListFilter, ModelListFilter, PurchaseYearListFilter, 'far_asset')
     fieldsets = (
         (None, {
             'fields': (('name', 'owner', 'active'),
                        ('location', 'exact_location', 'ip_address'),
                        ('serial', 'model', 'manufacturer', ),
-                       ('wireless_mac', 'wired_mac', 'bluetooth_mac'))
+                       ('wired_mac', 'wireless_mac', 'bluetooth_mac'))
         }),
         ('Financial', {
-            'fields': (('far_asset', 'far_cost', 'ed_cost'), ('purchase_date', 'warranty_period'))
+            'fields': (('far_asset', 'far_cost', 'ed_cost'), ('purchase_date', 'warranty_period', 'invoices'))
         }),
 
     )
@@ -147,6 +148,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
                                           recipient=form.cleaned_data['recipient'],
                                           transfer='outgoing',
                                           notes=form.cleaned_data['notes'])
+
                         ah.save()
 
                         # Save model changes and create reversion instance
@@ -244,6 +246,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
                                           recipient=form.cleaned_data['recipient'],
                                           transfer='internal',
                                           notes=notes)
+
                         ah.save()
 
                         # Save model changes and create reversion instance
@@ -427,6 +430,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
                                       recipient='ICT Services',
                                       transfer='internal',
                                       notes=notes)
+
                     ah.save()
 
                     # Save model changes and create reversion instance

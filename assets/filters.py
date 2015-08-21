@@ -1,17 +1,17 @@
 from django.contrib import admin
 from django.contrib.admin.filters import FieldListFilter
-from django.utils.translation import ugettext_lazy as _
 from django.utils import timezone
 import datetime
 from datetime import date
 from django.contrib.admin import ListFilter
+from django.utils.translation import ugettext_lazy as _
 from django.core.exceptions import ImproperlyConfigured
 
 
-class YearPurchasedListFilter(admin.SimpleListFilter):
+class PurchaseYearListFilter(admin.SimpleListFilter):
     # Human-readable title which will be displayed in the
     # right admin sidebar just above the filter options.
-    title = ('purchase date')
+    title = 'purchase date'
 
     # Parameter for the filter that will be used in the URL query.
     parameter_name = 'purchase_date'
@@ -41,18 +41,6 @@ class YearPurchasedListFilter(admin.SimpleListFilter):
         date_list.append(('older', 'older'))
 
         return date_list
-
-    # Evaluates display text as query string. Not suitable for date use!
-    # def choices(self, cl):  # Override this method to prevent the default "All".
-        # from django.utils.encoding import force_text
-    #     for lookup, title in self.lookup_choices:
-    #         yield {
-    #             'selected': False,
-    #             'query_string': cl.get_query_string({
-    #                 self.parameter_name: lookup,
-    #             }, []),
-    #             'display': title,
-    #         }
 
     def queryset(self, request, queryset):
         """
@@ -107,10 +95,49 @@ class YearPurchasedListFilter(admin.SimpleListFilter):
         else:
             return queryset
 
-# Modified version of http://stackoverflow.com/questions/6563196/html-input-textbox-in-django-admin-py-filter
+
+class ActiveListFilter(admin.SimpleListFilter):
+    """
+    Custom list filter to replace default 'active' filter. Use to force default selected value as 'Yes'.
+    """
+
+
+    title = _('active')
+
+    parameter_name = 'active'
+
+    def lookups(self, request, model_admin):
+        return (
+            ('all', _('All')),
+            (None, _('Yes')),
+            ('0', _('No')),
+        )
+
+    def choices(self, cl):
+        """
+        Override this method to prevent the default "All".
+        Evaluates display text as query string. Not suitable for non trivial data lookups (i.e. date)
+        """
+        for lookup, title in self.lookup_choices:
+            yield {
+                'selected': self.value() == lookup,
+                'query_string': cl.get_query_string({
+                    self.parameter_name: lookup,
+                }, []),
+                'display': title,
+            }
+
+    def queryset(self, request, queryset):
+        if self.value() in ('all', '0'):
+            return queryset.filter(active=self.value())
+        elif self.value() is None:
+            return queryset.filter(active='1')
+
+
 class SingleTextInputFilter(ListFilter):
     """
-    renders filter form with text input and submit button
+    Modified version of http://stackoverflow.com/questions/6563196/html-input-textbox-in-django-admin-py-filter.
+    Renders filter form with text input and submit button.
     """
     parameter_name = None
     template = "admin/assets/textinput_filter.html"
@@ -159,7 +186,7 @@ class SingleTextInputFilter(ListFilter):
         }, )
 
 
-class ModelFilter(SingleTextInputFilter):
+class ModelListFilter(SingleTextInputFilter):
     title = 'Model'
     parameter_name = 'model'
 
@@ -168,11 +195,13 @@ class ModelFilter(SingleTextInputFilter):
             return queryset.filter(model__icontains=self.value())
 
 
+class YearPurchasedListFilter(FieldListFilter):
+    """
+    Rewritten DateFieldListFilter - DO NOT USE.
+    Django won't allow filters in list_filter that inherit directly from FieldListFilter! T_T
+    Kept for reference purposes.
+    """
 
-
-# TODO Django won't let me use a filter in list_filter that inherits directly from FieldListFilter! T_T
-# Rewritten DateFieldListFilter - DO NOT USE
-class PurchaseYearListFilter(FieldListFilter):
     def __init__(self, field, request, params, model, model_admin, field_path):
         field_path = 'purchase_date'
         self.field_generic = '%s__' % field_path
