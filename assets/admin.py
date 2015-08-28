@@ -32,7 +32,7 @@ class HistoryInline(admin.StackedInline):
     verbose_name_plural = 'Asset History'
     can_delete = False
     template = 'admin/assets/assethistory/edit_inline/stacked.html'
-    fields = ('notes',)
+    fields = ('notes', )
     extra = 1
 
     formfield_overrides = {
@@ -61,7 +61,7 @@ class AssetResource(resources.ModelResource):
 
 
 # TODO Simplify admin message construction using string interpolation
-class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelAdmin):
+class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, admin.ModelAdmin):
     """
     AssetAdmin
     """
@@ -73,7 +73,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ImportExportModelA
         }
 
 #   For custom change_form template (i.e. override title etc)
-    change_form_template = 'admin/assets/asset/change_form.html'
+    # change_form_template = 'admin/assets/asset/change_form.html'
     change_list_template = 'admin/assets/asset/change_list.html'
 
     form = AssetAdminForm
@@ -487,7 +487,7 @@ class AssetHistoryResource(resources.ModelResource):
         model = AssetHistory
 
 
-class AssetHistoryAdmin(reversion.VersionAdmin, ImportExportModelAdmin):
+class AssetHistoryAdmin(ImportExportModelAdmin):
     """
     AssetHistoryAdmin
     """

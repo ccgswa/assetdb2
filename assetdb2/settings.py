@@ -35,8 +35,8 @@ INSTALLED_APPS = {
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'import_export',
-    'reversion',
     'django_object_actions',
+    'reversion',
     'assets'
 }
 

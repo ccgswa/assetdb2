@@ -1,6 +1,6 @@
 from django import forms
 from django.forms import ModelForm
-from assets.models import Asset
+from assets.models import Asset, AssetHistory
 
 # Template example of a model form
 class AssetAdminForm(forms.ModelForm):

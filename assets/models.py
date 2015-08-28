@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+import reversion
 
 # Abstract class to track model changes
 # class AbstractClass(models.Model):
@@ -43,6 +44,10 @@ class Asset(models.Model):
     def __str__(self):
         return self.name.encode('ascii', errors='replace')
 
+# Manually registering in models.py and setting follow to blank excludes inlines from reversion for this model.
+# This is done to prevent errors due to the hidden foreign key fields 'created_by' and 'edited_by' not being rewritten
+# when reverting an Asset. AssetHistory is now effectively decoupled from Asset version control.
+reversion.register(Asset, follow=())
 
 class AssetHistory(models.Model):
     asset = models.ForeignKey(Asset, editable=False)

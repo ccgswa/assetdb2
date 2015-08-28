@@ -128,7 +128,9 @@ class ActiveListFilter(admin.SimpleListFilter):
             }
 
     def queryset(self, request, queryset):
-        if self.value() in ('all', '0'):
+        if self.value() == 'all':
+            return queryset
+        elif self.value() == '0':
             return queryset.filter(active=self.value())
         elif self.value() is None:
             return queryset.filter(active='1')
