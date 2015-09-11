@@ -10,6 +10,7 @@ from .filters import *
 from django.shortcuts import render
 from django.core.urlresolvers import reverse
 import reversion
+from .signals import handlers
 
 # TODO Explore further customisations https://docs.djangoproject.com/en/1.8/intro/tutorial02/#customizing-your-application-s-templates
 
@@ -23,6 +24,8 @@ import reversion
 # TODO Make replace_ipad appear only on iPad pages
 
 # TODO appear to be working efficiently
+
+# TODO Implement reversion signal connent/disconnect for each object_action
 
 
 # Inline for displaying asset history on Asset admin page.
@@ -80,6 +83,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, admin.ModelAdmin):
 
     search_fields = ['name', 'serial', 'model', 'manufacturer', 'exact_location', 'owner', 'wired_mac', 'wireless_mac', 'bluetooth_mac']
     list_display = ('name', 'model', 'owner', 'serial', 'wireless_mac', 'location', 'exact_location', 'active', 'purchase_date')
+    #TODO Add a new SingleTextInputFilter for Manufacturer
     list_filter = (ActiveListFilter, ModelListFilter, PurchaseYearListFilter, 'far_asset')
     fieldsets = (
         (None, {
@@ -151,6 +155,9 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, admin.ModelAdmin):
 
                         ah.save()
 
+                        # Disconnect the pre_reversion_commit signal to prevent auto comment
+                        reversion.pre_revision_commit.disconnect(handlers.comment_asset_changes)
+
                         # Save model changes and create reversion instance
                         with transaction.atomic(), reversion.create_revision():
                             asset.save()
@@ -158,6 +165,10 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, admin.ModelAdmin):
                             reversion.set_comment('Asset decommissioned. Recipient: %s Note: %s' %
                                                   (form.cleaned_data['recipient'],
                                                    form.cleaned_data['notes']))
+
+                        # Reconnect to the signal
+                        reversion.pre_revision_commit.connect(handlers.comment_asset_changes)
+
                     else:
                         currently_inactive += 1
                         if currently_inactive == 1:
@@ -249,11 +260,18 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, admin.ModelAdmin):
 
                         ah.save()
 
+                        # Disconnect the pre_reversion_commit signal to prevent auto comment
+                        reversion.pre_revision_commit.disconnect(handlers.comment_asset_changes)
+
                         # Save model changes and create reversion instance
                         with transaction.atomic(), reversion.create_revision():
                             asset.save()
                             reversion.set_user(request.user)
                             reversion.set_comment(notes)
+
+                        # Reconnect to the signal
+                        reversion.pre_revision_commit.connect(handlers.comment_asset_changes)
+
                     else:
                         if not asset.active:
                             currently_inactive += 1
@@ -372,12 +390,18 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, admin.ModelAdmin):
                     old_ah.save()
                     new_ah.save()
 
+                    # Disconnect the pre_reversion_commit signal to prevent auto comment
+                    reversion.pre_revision_commit.disconnect(handlers.comment_asset_changes)
+
                     # Save model changes and create reversion instance
                     with transaction.atomic(), reversion.create_revision():
                         new_asset.save()
                         reversion.set_user(request.user)
                         reversion.set_comment('Received as replacement for %s (%s)' %
                                               (old_asset.name, old_asset.serial))
+
+                    # Reconnect to the signal
+                    reversion.pre_revision_commit.connect(handlers.comment_asset_changes)
 
                     # TODO Add link to new asset in message
                     self.message_user(request,
@@ -431,13 +455,19 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, admin.ModelAdmin):
                                       transfer='internal',
                                       notes=notes)
 
-                    ah.save()
+                    # Disconnect the pre_reversion_commit signal to prevent auto comment
+                    reversion.pre_revision_commit.disconnect(handlers.comment_asset_changes)
 
                     # Save model changes and create reversion instance
                     with transaction.atomic(), reversion.create_revision():
+                        ah.save()
                         asset.save()
                         reversion.set_user(request.user)
                         reversion.set_comment(notes)
+
+                    # Reconnect to the signal
+                    reversion.pre_revision_commit.connect(handlers.comment_asset_changes)
+
                 else:
                     currently_inactive += 1
                     if currently_inactive == 1:
@@ -487,7 +517,7 @@ class AssetHistoryResource(resources.ModelResource):
         model = AssetHistory
 
 
-class AssetHistoryAdmin(ImportExportModelAdmin):
+class AssetHistoryAdmin(reversion.VersionAdmin, ImportExportModelAdmin):
     """
     AssetHistoryAdmin
     """

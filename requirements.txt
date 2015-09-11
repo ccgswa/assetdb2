@@ -1,2 +1,8 @@
+diff-match-patch==20121119
 Django==1.8
+django-import-export==0.2.7
+django-object-actions==0.5.1
+django-reversion==1.8.6
 psycopg2==2.6
+pytz==2015.4
+tablib==0.10.0
