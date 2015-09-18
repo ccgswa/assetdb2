@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 import reversion
+from django.utils import timezone
 
 # Abstract class to track model changes
 # class AbstractClass(models.Model):
@@ -11,6 +12,7 @@ import reversion
 #       abstract = True
 
 # TODO https://docs.djangoproject.com/en/1.8/ref/validators/ to add validators to prevent entering commas
+
 
 class Asset(models.Model):
     name = models.CharField(max_length=200, db_index=True, unique=True)
@@ -29,8 +31,8 @@ class Asset(models.Model):
     location = models.CharField(max_length=200, choices=LOCATION_CHOICES, default='none')
     exact_location = models.CharField('Year/Dept/Room', db_index=True, max_length=200, blank=True)
     owner = models.CharField(max_length=200, db_index=True, blank=True)
-    purchase_date = models.DateField(help_text="Please use the following format: <em>YYYY-MM-DD</em>.")
-    invoices = models.CharField('Invoice Numbers', max_length=200, blank=True)
+    purchase_date = models.DateField(help_text="Please use the following format: <em>YYYY-MM-DD</em>.",
+                                     default=timezone.now)
     wired_mac = models.CharField('MAC', db_index=True, max_length=200, blank=True)
     wireless_mac = models.CharField('WiFi MAC', db_index=True, max_length=200, blank=True)
     bluetooth_mac = models.CharField('Bluetooth MAC', db_index=True, max_length=200, blank=True)

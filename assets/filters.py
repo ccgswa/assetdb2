@@ -9,8 +9,7 @@ from django.core.exceptions import ImproperlyConfigured
 
 
 class PurchaseYearListFilter(admin.SimpleListFilter):
-    # Human-readable title which will be displayed in the
-    # right admin sidebar just above the filter options.
+    # Human-readable title which will be displayed in the right admin sidebar just above the filter options.
     title = 'purchase date'
 
     # Parameter for the filter that will be used in the URL query.
@@ -61,8 +60,6 @@ class PurchaseYearListFilter(admin.SimpleListFilter):
         else:
             next_month = today.replace(month=today.month + 1, day=1)
         next_year = today.replace(year=today.year + 1, month=1, day=1)
-
-        # this_year = date.today().year
 
         # Filter the query set based on purchase year selected
 
