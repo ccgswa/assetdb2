@@ -197,6 +197,15 @@ class ModelListFilter(SingleTextInputFilter):
             return queryset.filter(model__icontains=self.value())
 
 
+class ManufacturerListFilter(SingleTextInputFilter):
+    title = 'Manufacturer'
+    parameter_name = 'manufacturer'
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(manufacturer__icontains=self.value())
+
+
 class YearPurchasedListFilter(FieldListFilter):
     """
     Rewritten DateFieldListFilter - DO NOT USE.

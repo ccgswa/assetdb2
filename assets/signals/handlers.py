@@ -17,16 +17,25 @@ def comment_asset_changes(instances, versions, revision, **kwargs):
     current_version = versions[0].field_dict
     field_list = current_version.keys()
     field_list.remove('id')
-    change_comment = ""
+    revision_comment = ""
 
     try:
         past_version = reversion.get_for_object(instances[0])[0].field_dict
     except IndexError:
         # Object created
         if isinstance(instances[0], Asset):
-            revision.comment = "%s added to inventory" % current_version['name']
+            revision_comment = "%s added to inventory" % current_version['name']
+            revision.comment = revision_comment
+            ah = AssetHistory(asset=instances[0],
+                              created_by=revision.user,
+                              incident='general',
+                              recipient='ICT Services',
+                              transfer='incoming',
+                              notes=revision_comment)
+            ah.save()
+
         elif isinstance(instances[0], AssetHistory):
-            revision.comment = "New history note: %s" % current_version['notes']
+            revision.comment = "New history entry: %s" % current_version['notes']
         else:
             pass
     except TypeError:
@@ -41,19 +50,40 @@ def comment_asset_changes(instances, versions, revision, **kwargs):
                 pass
             else:
                 if current_version[field] != past_test:
-                    if past_test == "":
+
+                    past_value = past_test
+                    if past_value == "":
                         past_value = "[empty]"
                     else:
-                        past_value = past_test
-                    change_comment += ", %s: %s > %s" % (field, past_value, current_version[field])
+                        past_value = "\'" + past_value + "\'"
+
+                    new_value = current_version[field]
+                    if new_value == "":
+                        new_value = "[empty]"
+                    else:
+                        new_value = "\'" + new_value + "\'"
+
+                    # Get friendly field names for the
+                    verbose_field = type(instances[0])._meta.get_field_by_name(field)[0].verbose_name
+                    if field != 'edited_date':
+                        revision_comment += ", %s: %s > %s" % (verbose_field, past_value, new_value)
                 else:
                     pass
-        if change_comment != "":
-            change_comment = "Changes -- %s" % change_comment[1:]
-        else:
-            change_comment = "No changes made."
+        if revision_comment != "":
+            revision_comment = "Changes -- %s" % revision_comment[1:]
 
-        revision.comment = change_comment
+            if isinstance(instances[0], Asset):
+                ah = AssetHistory(asset=instances[0],
+                                  created_by=revision.user,
+                                  incident='general',
+                                  recipient='ICT Services',
+                                  transfer='incoming',
+                                  notes=revision_comment)
+                ah.save()
+        else:
+            revision_comment = "No changes made."
+
+        revision.comment = revision_comment
 
     revision = revision
     revision.save()

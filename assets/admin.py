@@ -82,9 +82,9 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, admin.ModelAdmin):
     form = AssetAdminForm
 
     search_fields = ['name', 'serial', 'model', 'manufacturer', 'exact_location', 'owner', 'wired_mac', 'wireless_mac', 'bluetooth_mac']
-    list_display = ('name', 'model', 'owner', 'serial', 'wireless_mac', 'location', 'exact_location', 'active', 'purchase_date')
+    list_display = ('name', 'model', 'manufacturer',  'owner', 'serial', 'wireless_mac', 'location', 'exact_location', 'active', 'purchase_date')
     #TODO Add a new SingleTextInputFilter for Manufacturer
-    list_filter = (ActiveListFilter, ModelListFilter, PurchaseYearListFilter, 'far_asset')
+    list_filter = (ActiveListFilter, 'far_asset', ModelListFilter, ManufacturerListFilter, PurchaseYearListFilter)
     fieldsets = (
         (None, {
             'fields': (('name', 'owner', 'active'),
@@ -117,6 +117,16 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, admin.ModelAdmin):
             instance.created_by = request.user
             instance.save()
         formset.save_m2m()
+
+    def response_change(self, request, obj, post_url_continue=None):
+        """This makes the response go to the newly changed Asset's change page
+        without using reverse"""
+        return HttpResponseRedirect("../%s" % obj.id)
+
+    def response_add(self, request, obj, post_url_continue=None):
+        """This makes the response go to the newly added Asset's change page
+        without using reverse"""
+        return HttpResponseRedirect("../%s" % obj.id)
 
     # Django Admin action to decommission an asset.
     # The django-object-actions decorator makes it available in change_form template.
@@ -533,7 +543,15 @@ class AssetHistoryAdmin(reversion.VersionAdmin, ImportExportModelAdmin):
         obj.created_by = request.user
         obj.save()
 
-    pass
+    def response_change(self, request, obj, post_url_continue=None):
+        """This makes the response go to the newly changed AssetHistory's change page
+        without using reverse"""
+        return HttpResponseRedirect("../%s" % obj.id)
+
+    def response_add(self, request, obj, post_url_continue=None):
+        """This makes the response go to the newly added AssetHistory's change page
+        without using reverse"""
+        return HttpResponseRedirect("../%s" % obj.id)
 
 admin.site.register(Asset, AssetAdmin)
 admin.site.register(AssetHistory, AssetHistoryAdmin)
