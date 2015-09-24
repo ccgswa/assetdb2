@@ -3,7 +3,7 @@ from django.contrib import messages
 from django.http import HttpResponseRedirect
 from models import AssetHistory
 from import_export import resources
-from import_export.admin import ImportExportModelAdmin
+from import_export.admin import ImportExportModelAdmin, ExportActionModelAdmin, ImportExportMixin
 from django_object_actions import DjangoObjectActions, takes_instance_or_queryset
 from .forms import *
 from .filters import *
@@ -61,10 +61,14 @@ class AssetResource(resources.ModelResource):
 
     class Meta:
         model = Asset
+        # exclude = ('id', )
+        widgets = {
+            'purchase_date': {'format': '%Y-%m-%d'},
+            }
 
 
 # TODO Simplify admin message construction using string interpolation
-class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, admin.ModelAdmin):
+class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelAdmin, ImportExportModelAdmin, admin.ModelAdmin):
     """
     AssetAdmin
     """

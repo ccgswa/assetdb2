@@ -11,6 +11,30 @@ from django.utils import timezone
 #    class Meta:
 #       abstract = True
 
+"""
+IMPORTANT notes on model changes:
+
+Any model changes that result in a migration will result in previous saved reversion versions no longer being
+compatible with the new model. Previous reversion data will have to be deleted for this model to prevent errors.
+Run the following:
+                    ./manage.py deleterevisions assets.ModelNameGoesHere
+After deleting the data, go to assets/signals/handlers.py and temporarily comment out the section under 'except IndexError:'
+The run the following:
+                    ./manage.py createinitialrevisions assets.ModelNameGoesHere
+
+Finally, uncomment the code commented previously.
+
+
+
+Notes on importing data:
+
+1. Set up columns to match the Asset fields below in order. Add an 'id' column as the first but leave values blank.
+2. If using Excel on a Mac save as Windows CSV (OTHER CSVs WILL NOT WORK)
+3. Make sure the date column values are in the following format YYYY-mm-dd
+4. Import away!
+
+"""
+
 # TODO https://docs.djangoproject.com/en/1.8/ref/validators/ to add validators to prevent entering commas
 
 
@@ -42,6 +66,7 @@ class Asset(models.Model):
     warranty_period = models.CharField(max_length=200, blank=True)
     ip_address = models.CharField(max_length=200, blank=True)
     active = models.BooleanField(default=True)
+    invoices = models.CharField(max_length=200, blank=True)
 
     def __str__(self):
         return self.name.encode('ascii', errors='replace')
@@ -51,9 +76,10 @@ class Asset(models.Model):
 # when reverting an Asset. AssetHistory is now effectively decoupled from Asset version control.
 reversion.register(Asset, follow=())
 
+
 class AssetHistory(models.Model):
     asset = models.ForeignKey(Asset, editable=False)
-    created_by = models.ForeignKey(User, editable=False, related_name="history_created")
+    created_by = models.ForeignKey(User, editable=False, null=True, related_name="history_created")
     created_date = models.DateTimeField(auto_now_add=True)
     edited_by = models.ForeignKey(User, editable=False, null=True, related_name="history_edited")
     edited_date = models.DateTimeField(auto_now=True, null=True)
