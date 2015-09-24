@@ -531,13 +531,14 @@ class AssetHistoryResource(resources.ModelResource):
         model = AssetHistory
 
 
-class AssetHistoryAdmin(reversion.VersionAdmin, ImportExportModelAdmin):
+class AssetHistoryAdmin(reversion.VersionAdmin, ImportExportModelAdmin, ExportActionModelAdmin, admin.ModelAdmin):
     """
     AssetHistoryAdmin
     """
 
     list_display = ('asset', 'incident', 'created_by', 'created_date', 'notes')
     search_fields = ['asset__name', 'notes', 'created_by__username']
+    change_list_template = 'admin/assets/assethistory/change_list.html'
 
     # Integrate ImportExport functionality for AssetAdmin
     resource_class = AssetHistoryResource
