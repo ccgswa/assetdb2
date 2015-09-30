@@ -5,6 +5,7 @@ from assets.models import Asset, AssetHistory
 
 # TODO Find a way to create an AssetHistory entry when changes are made. Need to somehow access request.user? Impossible?
 
+# Reversion signals should not be invoked with the 'sender' attribute
 @receiver(reversion.pre_revision_commit)
 def comment_asset_changes(instances, versions, revision, **kwargs):
     """
@@ -22,7 +23,7 @@ def comment_asset_changes(instances, versions, revision, **kwargs):
     try:
         past_version = reversion.get_for_object(instances[0])[0].field_dict
     except IndexError:
-        # Object created
+        # No previous revisions for object. Therefore object created.
         if isinstance(instances[0], Asset):
             revision_comment = "%s added to inventory" % current_version['name']
             revision.comment = revision_comment
@@ -46,7 +47,7 @@ def comment_asset_changes(instances, versions, revision, **kwargs):
             try:
                 past_test = past_version[field]
             except KeyError:
-                # New field created
+                # New field created.
                 pass
             else:
                 if current_version[field] != past_test:

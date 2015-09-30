@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 import reversion
 from django.utils import timezone
+from validators import validate_mac
 
 # Abstract class to track model changes
 # class AbstractClass(models.Model):
@@ -57,9 +58,10 @@ class Asset(models.Model):
     owner = models.CharField(max_length=200, db_index=True, blank=True)
     purchase_date = models.DateField(help_text="Please use the following format: <em>YYYY-MM-DD</em>.",
                                      default=timezone.now)
-    wired_mac = models.CharField('MAC', db_index=True, max_length=200, blank=True)
-    wireless_mac = models.CharField('WiFi MAC', db_index=True, max_length=200, blank=True)
-    bluetooth_mac = models.CharField('Bluetooth MAC', db_index=True, max_length=200, blank=True)
+    wired_mac = models.CharField('MAC', db_index=True, max_length=200, blank=True, validators=[validate_mac])
+    wireless_mac = models.CharField('WiFi MAC', db_index=True, max_length=200, blank=True, validators=[validate_mac])
+    bluetooth_mac = models.CharField('Bluetooth MAC', db_index=True, max_length=200, blank=True,
+                                     validators=[validate_mac])
     far_asset = models.BooleanField('FAR Asset', default=False)
     far_cost = models.CharField(max_length=200, blank=True)
     ed_cost = models.CharField('Educational Cost', max_length=200, blank=True)

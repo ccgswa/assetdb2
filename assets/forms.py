@@ -1,8 +1,9 @@
 from django import forms
 from django.forms import ModelForm
 from assets.models import Asset, AssetHistory
+from validators import clean_mac
 
-# Template example of a model form
+
 class AssetAdminForm(forms.ModelForm):
 
     class Meta:
@@ -12,6 +13,18 @@ class AssetAdminForm(forms.ModelForm):
             'name': forms.TextInput(),
 
         }
+
+    def clean_wired_mac(self):
+        value = self.cleaned_data['wired_mac']
+        return clean_mac(value)
+
+    def clean_wireless_mac(self):
+        value = self.cleaned_data['wireless_mac']
+        return clean_mac(value)
+
+    def clean_bluetooth_mac(self):
+        value = self.cleaned_data['bluetooth_mac']
+        return clean_mac(value)
 
 
 class AssetDecommissionForm(forms.Form):

@@ -25,8 +25,6 @@ from .signals import handlers
 
 # TODO appear to be working efficiently
 
-# TODO Implement reversion signal connent/disconnect for each object_action
-
 
 # Inline for displaying asset history on Asset admin page.
 class HistoryInline(admin.StackedInline):
