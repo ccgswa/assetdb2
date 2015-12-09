@@ -9,8 +9,11 @@ from .forms import *
 from .filters import *
 from django.shortcuts import render
 from django.core.urlresolvers import reverse
+from django.conf.urls import patterns, url
 import reversion
 from .signals import handlers
+import csv
+
 
 # TODO Explore further customisations https://docs.djangoproject.com/en/1.8/intro/tutorial02/#customizing-your-application-s-templates
 
@@ -19,11 +22,15 @@ from .signals import handlers
 # TODO Find out why Reversion ignores custom saveformset function override
 # https://github.com/etianen/django-reversion/issues/339
 
-# TODO Leave Asset History comment when new asset created via Add Asset.
-
 # TODO Make replace_ipad appear only on iPad pages
 
 # TODO appear to be working efficiently
+
+# TODO Integrate django adminactions with reversion
+
+# TODO Find out how to disable reversion middleware when using object actions
+
+# TODO Find out why revisions aren't being saved for object actions
 
 
 # Inline for displaying asset history on Asset admin page.
@@ -64,6 +71,10 @@ class AssetResource(resources.ModelResource):
             'purchase_date': {'format': '%Y-%m-%d'},
             }
 
+#    def after_save_instance(self, instance, dry_run): # Does not work with current signal handler configuration.
+#        if not dry_run:
+#            reversion.set_comment("Added to inventory by mass import.")
+
 
 # TODO Simplify admin message construction using string interpolation
 class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelAdmin, ImportExportModelAdmin, admin.ModelAdmin):
@@ -84,8 +95,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
     form = AssetAdminForm
 
     search_fields = ['name', 'serial', 'model', 'manufacturer', 'exact_location', 'owner', 'wired_mac', 'wireless_mac', 'bluetooth_mac']
-    list_display = ('name', 'model', 'manufacturer',  'owner', 'serial', 'wireless_mac', 'location', 'exact_location', 'active', 'purchase_date')
-    #TODO Add a new SingleTextInputFilter for Manufacturer
+    list_display = ('name', 'model', 'manufacturer',  'owner', 'serial', 'wireless_mac', 'location', 'exact_location', 'active', 'purchase_date', 'far_cost')
     list_filter = (ActiveListFilter, 'far_asset', ModelListFilter, ManufacturerListFilter, PurchaseYearListFilter)
     fieldsets = (
         (None, {
@@ -100,7 +110,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
 
     )
 
-    # readonly_fields = ('name',) # TODO Make readonly only on the change_form page. Must be editable on add asset.
+    # readonly_fields = ('name',) # TODO Make name readonly only on the change_form page. Must be editable on add asset.
 
     # save_on_top = True
     actions = ['decommission', 'deploy', 'return_ict']
@@ -108,6 +118,15 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
     inlines = [
         HistoryInline,
     ]
+
+    csv_options_default = {'date_format': 'd/m/Y',
+                       'datetime_format': 'N j, P',
+                       'time_format': 'Y',
+                       'header': False,
+                       'quotechar': '"',
+                       'quoting': csv.QUOTE_ALL,
+                       'delimiter': ';',
+                       'escapechar': '\\', }
 
     # Integrate ImportExport functionality for AssetAdmin
     resource_class = AssetResource
@@ -129,6 +148,40 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
         """This makes the response go to the newly added Asset's change page
         without using reverse"""
         return HttpResponseRedirect("../%s" % obj.id)
+
+    def get_urls(self):
+        """Prepend the URL for csvfilter to the AssetAdmin URLs
+        """
+        urls = super(AssetAdmin, self).get_urls()
+        my_urls = patterns('',
+            (r'^csvfilter/$', self.csvfilter)
+        )
+        return my_urls + urls
+
+    def csvfilter(self, request):
+        """
+        A simple view under AssetAdmin that generates and posts a form
+        with a csv file containing a simple list of asset names
+        """
+        form = AssetCSVUploadForm()
+        return render(request, 'admin/assets/csvupload.html',
+                      {'form': form})
+
+    def get_queryset(self, request):
+        """
+        Overrides the default get_queryset of AssetAdmin. If csvupload has been posted, process the csv file and
+        modify the queryset to show only those assets listed within.
+        """
+        qs = super(AssetAdmin, self).get_queryset(request)
+        if 'csvupload' in request.POST:
+            form = AssetCSVUploadForm(request.POST, request.FILES)
+            if form.is_valid():
+                f = csv.reader(request.FILES['csvfile'])
+                filterassets = []
+                for line in f:
+                    filterassets.append(line[0])
+                qs = Asset.objects.filter(name__in=filterassets)
+        return qs
 
     # Django Admin action to decommission an asset.
     # The django-object-actions decorator makes it available in change_form template.
@@ -467,12 +520,13 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
                                       transfer='internal',
                                       notes=notes)
 
+                    ah.save()
+
                     # Disconnect the pre_reversion_commit signal to prevent auto comment
                     reversion.pre_revision_commit.disconnect(handlers.comment_asset_changes)
 
                     # Save model changes and create reversion instance
                     with transaction.atomic(), reversion.create_revision():
-                        ah.save()
                         asset.save()
                         reversion.set_user(request.user)
                         reversion.set_comment(notes)
@@ -527,6 +581,10 @@ class AssetHistoryResource(resources.ModelResource):
 
     class Meta:
         model = AssetHistory
+
+#    def after_save_instance(self, instance, dry_run): # Does not work with current signal handler configuration.
+#        if not dry_run:
+#           reversion.set_comment("Data imported from file.")  #  Comments overridden by signal handler
 
 
 class AssetHistoryAdmin(reversion.VersionAdmin, ImportExportModelAdmin, ExportActionModelAdmin, admin.ModelAdmin):

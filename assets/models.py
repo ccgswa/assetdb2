@@ -16,16 +16,12 @@ from validators import validate_mac
 IMPORTANT notes on model changes:
 
 Any model changes that result in a migration will result in previous saved reversion versions no longer being
-compatible with the new model. Previous reversion data will have to be deleted for this model to prevent errors.
+compatible with the new model. Previous reversion data will have to be deleted for this model to prevent revert errors.
 Run the following:
                     ./manage.py deleterevisions assets.ModelNameGoesHere
-After deleting the data, go to assets/signals/handlers.py and temporarily comment out the section under 'except IndexError:'
-The run the following:
+
+Then run the following:
                     ./manage.py createinitialrevisions assets.ModelNameGoesHere
-
-Finally, uncomment the code commented previously.
-
-
 
 Notes on importing data:
 
@@ -54,8 +50,8 @@ class Asset(models.Model):
         ('lost', 'Lost or Stolen')
     )
     location = models.CharField(max_length=200, choices=LOCATION_CHOICES, default='none')
-    exact_location = models.CharField('Year/Dept/Room', db_index=True, max_length=200, blank=True)
-    owner = models.CharField(max_length=200, db_index=True, blank=True)
+    exact_location = models.CharField('Year/Dept/Room', db_index=True, max_length=200, blank=True, default='ICT Services')
+    owner = models.CharField(max_length=200, db_index=True, blank=True, default='ICT Services')
     purchase_date = models.DateField(help_text="Please use the following format: <em>YYYY-MM-DD</em>.",
                                      default=timezone.now)
     wired_mac = models.CharField('MAC', db_index=True, max_length=200, blank=True, validators=[validate_mac])

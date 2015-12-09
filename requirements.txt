@@ -1,8 +1,14 @@
 diff-match-patch==20121119
 Django==1.8
+django-adminactions==0.8.5
 django-import-export==0.2.7
 django-object-actions==0.5.1
 django-reversion==1.8.6
+future==0.15.2
 psycopg2==2.6
 pytz==2015.4
+six==1.10.0
 tablib==0.10.0
+unicodecsv==0.14.1
+xlrd==0.9.4
+xlwt-future==0.8.0

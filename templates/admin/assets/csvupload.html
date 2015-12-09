@@ -1,0 +1,24 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+    <form action=".." method="post" enctype="multipart/form-data">
+    {# action=".." in order to force post to reach the get_queryset method under AssetAdmin #}
+    {# must inlcude enctype to support file uploads. See https://docs.djangoproject.com/en/1.9/topics/http/file-uploads/ #}
+
+        {% csrf_token %}
+
+        <h2>Upload Asset Names</h2>
+        <div>* Only accepts a simple list of Asset tags in csv format.</div>
+        <br>
+
+        <div>
+            {{ form }}
+            <input type="hidden" name="action" value="csvupload" />
+            <input type="submit" name="csvupload" value="CSV Upload" style="color: #FF3333;" /> {# Add class="default" to look the same as admin #}
+            <input type="submit" name="cancel" value="Cancel" />
+        </div>
+
+
+
+    </form>
+{% endblock %}

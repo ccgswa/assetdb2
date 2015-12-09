@@ -35,6 +35,8 @@ class AssetDecommissionForm(forms.Form):
     recipient = forms.CharField(label='Recipient', max_length=200)
     notes = forms.CharField(label='Notes', widget=forms.Textarea)
 
+class AssetCSVUploadForm(forms.Form):
+    csvfile = forms.FileField(label='CSVFile')
 
 class AssetDeploymentForm(forms.Form):
     deploy_choices = (
