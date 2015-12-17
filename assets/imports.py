@@ -12,11 +12,6 @@ import pytz
 csv_path = '/Users/gnolan/dev/python/assets_export/'
 
 
-def merge_owner_location():
-    
-    return None
-
-
 def parse_date(value):
     if value != '':
         return datetime.strptime(value, '%Y-%m-%d').date()

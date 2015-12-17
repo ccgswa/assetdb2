@@ -94,14 +94,15 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
 
     form = AssetAdminForm
 
-    search_fields = ['name', 'serial', 'model', 'manufacturer', 'exact_location', 'owner', 'wired_mac', 'wireless_mac', 'bluetooth_mac']
-    list_display = ('name', 'model', 'manufacturer',  'owner', 'serial', 'wireless_mac', 'location', 'exact_location', 'active', 'purchase_date', 'far_cost')
+    list_per_page = 500
+    search_fields = ['name', 'serial', 'model', 'manufacturer', 'owner', 'wired_mac', 'wireless_mac', 'bluetooth_mac']
+    list_display = ('name', 'model', 'manufacturer',  'owner', 'serial', 'wireless_mac', 'location', 'active', 'purchase_date', 'far_cost')
     list_filter = (ActiveListFilter, 'far_asset', ModelListFilter, ManufacturerListFilter, PurchaseYearListFilter)
     fieldsets = (
         (None, {
-            'fields': (('name', 'owner', 'active'),
-                       ('location', 'exact_location', 'ip_address'),
-                       ('serial', 'model', 'manufacturer', ),
+            'fields': (('name', 'serial', 'active'),
+                       ('owner', 'location'),
+                       ('model', 'manufacturer', 'ip_address'),
                        ('wired_mac', 'wireless_mac', 'bluetooth_mac'))
         }),
         ('Financial', {
@@ -118,15 +119,6 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
     inlines = [
         HistoryInline,
     ]
-
-    csv_options_default = {'date_format': 'd/m/Y',
-                       'datetime_format': 'N j, P',
-                       'time_format': 'Y',
-                       'header': False,
-                       'quotechar': '"',
-                       'quoting': csv.QUOTE_ALL,
-                       'delimiter': ';',
-                       'escapechar': '\\', }
 
     # Integrate ImportExport functionality for AssetAdmin
     resource_class = AssetResource
@@ -208,7 +200,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
                 for asset in queryset:
                     if asset.active:
                         asset.location = form.cleaned_data['location']
-                        asset.exact_location = form.cleaned_data['recipient']
+                        # asset.exact_location = form.cleaned_data['recipient']
                         asset.owner = '%s - %s' % (asset.owner, form.cleaned_data['location'])
                         asset.active = False
                         ah = AssetHistory(asset=asset,
@@ -315,7 +307,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
                             notes += ' as replacement for %s' % form.cleaned_data['replacing']
                         asset.location = form.cleaned_data['location']
                         asset.owner = form.cleaned_data['recipient']
-                        asset.exact_location = form.cleaned_data['exact_location']
+                        # asset.exact_location = form.cleaned_data['exact_location']
                         ah = AssetHistory(asset=asset,
                                           created_by=request.user,
                                           incident=form.cleaned_data['deploy_to'],
@@ -423,7 +415,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
                     new_asset.model = form.cleaned_data['model']
                     new_asset.serial = form.cleaned_data['serial']
                     new_asset.location = 'ccgs'
-                    new_asset.exact_location = 'ICT Services'
+                    # new_asset.exact_location = 'ICT Services'
                     new_asset.owner = 'ICT Services'
                     new_asset.purchase_date = form.cleaned_data['purchase_date']
                     new_asset.invoices = ''
@@ -500,6 +492,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
         # Prepare message string variables
         rows_updated = len(queryset)
         currently_inactive = 0
+        already_returned = 0
         error_bit = ""
 
         if len(queryset) == 1 and not queryset[0].active:
@@ -508,10 +501,10 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
         else:
             for asset in queryset:
                 # TODO Add logic (and appropriate error messaging) for when an asset is already owned by ICT Services
-                if asset.active:
+                if asset.active and asset.owner.lower() != 'ict services':
                     notes = 'Returned to ICT Services by %s' % asset.owner
                     asset.location = 'ccgs'
-                    asset.exact_location = 'ICT Services'
+                    # asset.exact_location = 'ICT Services'
                     asset.owner = 'ICT Services'
                     ah = AssetHistory(asset=asset,
                                       created_by=request.user,
@@ -535,32 +528,40 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
                     reversion.pre_revision_commit.connect(handlers.comment_asset_changes)
 
                 else:
-                    currently_inactive += 1
-                    if currently_inactive == 1:
-                        error_bit += asset.name
-                    else:
-                        error_bit += ", %s" % asset.name
-
-                    rows_updated -= currently_inactive
-
-                    # Construct message to user based on how many assets were updated
-                    if rows_updated == 0:
-                        self.message_user(request, "Cannot return inactive assets.", level=messages.ERROR)
-                    else:
-                        if rows_updated == 1:
-                            message_bit = "%s was" % queryset[0].name
-                        else:
-                            message_bit = "%s assets were" % rows_updated
-                        self.message_user(request, "%s returned to ICT Services." % message_bit,
-                                          level=messages.SUCCESS)
-
-                    # Generate error string
-                    if currently_inactive > 0:
+                    if not asset.active:
+                        currently_inactive += 1
                         if currently_inactive == 1:
-                            error_bit += " is inactive."
-                        elif currently_inactive > 1:
-                            error_bit += " are inactive."
-                        self.message_user(request, "%s Cannot return." % error_bit, level=messages.WARNING)
+                            error_bit += asset.name
+                        else:
+                            error_bit += ", %s" % asset.name
+                    else:
+                        already_returned += 1
+
+            rows_updated -= (currently_inactive + already_returned)
+
+            # Construct message to user based on how many assets were updated
+            if rows_updated == 0:
+                self.message_user(request, "Cannot return inactive assets or assets owned by ICT Services."
+                                  , level=messages.ERROR)
+            else:
+                if rows_updated == 1:
+                    message_bit = "%s was" % queryset[0].name
+                else:
+                    message_bit = "%s assets were" % rows_updated
+                self.message_user(request, "%s returned to ICT Services." % message_bit,
+                                  level=messages.SUCCESS)
+
+                if already_returned > 0:
+                    self.message_user(request, "Some assets were already owned by ICT Services.", level=messages.WARNING)
+
+            # Generate error string
+            if currently_inactive > 0:
+                if currently_inactive == 1:
+                    error_bit += " is inactive."
+                elif currently_inactive > 1:
+                    error_bit += " are inactive."
+                self.message_user(request, "%s Cannot return." % error_bit, level=messages.WARNING)
+
 
     # Names for django action tools
     decommission.short_description = "Decommission selected assets"

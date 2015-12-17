@@ -50,7 +50,7 @@ class Asset(models.Model):
         ('lost', 'Lost or Stolen')
     )
     location = models.CharField(max_length=200, choices=LOCATION_CHOICES, default='none')
-    exact_location = models.CharField('Year/Dept/Room', db_index=True, max_length=200, blank=True, default='ICT Services')
+    exact_location = models.CharField('Legacy location', db_index=True, max_length=200, blank=True, default='ICT Services')
     owner = models.CharField(max_length=200, db_index=True, blank=True, default='ICT Services')
     purchase_date = models.DateField(help_text="Please use the following format: <em>YYYY-MM-DD</em>.",
                                      default=timezone.now)
