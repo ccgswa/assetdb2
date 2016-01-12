@@ -1,5 +1,16 @@
 {% extends "admin/base_site.html" %}
 
+{% load i18n admin_static %}
+
+{% block breadcrumbs %}
+    <div class="breadcrumbs">
+        <a href="/admin/">{% trans "Home" %}</a> >
+        <a href="/admin/assets/">Asset Admin</a> >
+        <a href="/admin/assets/asset/">Assets</a> >
+        Mass Deploy by CSV
+    </div>
+{% endblock %}
+
 {% block content %}
     <form action="" method="post" enctype="multipart/form-data">
     {# action=".." in order to force post to reach the get_queryset method under AssetAdmin #}
@@ -15,9 +26,18 @@
             </ul>
         </div>
         <br>
-
         <div>
-            {{ form }}
+            {% for field in form %}
+                <div class="fieldWrapper">
+                    {{ field.errors }}
+                    {{ field.label_tag }} {{ field }}
+                    {% if field.help_text %}
+                    <p class="help">{{ field.help_text|safe }}</p>
+                    {% endif %}
+                </div>
+                <br>
+            {% endfor %}
+            <br>
             <input type="hidden" name="action" value="csvdeploy" />
             <input type="submit" name="csvdeploy" value="Mass Deploy" style="color: #FF3333;" /> {# Add class="default" to look the same as admin #}
             <input type="submit" name="cancel" value="Cancel" />

@@ -1,5 +1,16 @@
 {% extends "admin/base_site.html" %}
 
+{% load i18n admin_static %}
+
+{% block breadcrumbs %}
+    <div class="breadcrumbs">
+        <a href="/admin/">{% trans "Home" %}</a> >
+        <a href="/admin/assets/">Asset Admin</a> >
+        <a href="/admin/assets/asset/">Assets</a> >
+        Filter by CSV
+    </div>
+{% endblock %}
+
 {% block content %}
     <form action=".." method="post" enctype="multipart/form-data">
     {# action=".." in order to force post to reach the get_queryset method under AssetAdmin #}
@@ -7,17 +18,17 @@
 
         {% csrf_token %}
 
-        <h2>Upload List of Assets to Filter</h2>
-        <div>The list must be a single column csv file containing asset names only.</div><br>
+        <h2>Filter by CSV</h2>
+        <div><span style="font-weight: bold;">Important:</span> The csv file must contain a single column list of asset tags/names only.</div><br>
 
         <div>
             {{ form }}
             <input type="hidden" name="action" value="csvupload" />
-            <input type="submit" name="csvupload" value="CSV Upload" style="color: #FF3333;" /> {# Add class="default" to look the same as admin #}
+            <input type="submit" name="csvupload" value="Upload CSV and Filter" style="color: #FF3333;" /> {# Add class="default" to look the same as admin #}
             <input type="submit" name="cancel" value="Cancel" />
         </div>
         <br>
-        <div><span style="font-weight: bold; color: #FF3333;">WARNING:</span> Do not upload lists of more than 500 assets. You may accidentally select all active assets!</div>
+        <div><span style="font-weight: bold; color: #FF3333;">WARNING:</span> <span style="font-weight: bold;"> Do not upload lists of more than 500 assets.</span> You may accidentally select all active assets!</div>
 
 
     </form>

@@ -10,7 +10,7 @@ class AssetsConfig(AppConfig):
     """
 
     name = 'assets'
-    verbose_name = 'Assets'
+    verbose_name = 'Asset Admin'
 
     def ready(self):
         import assets.signals.handlers

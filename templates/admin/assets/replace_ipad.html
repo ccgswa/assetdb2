@@ -3,6 +3,17 @@
 {% load static %}
 {% load admin_urls %}
 
+{% load i18n admin_static %}
+
+{% block breadcrumbs %}
+    <div class="breadcrumbs">
+        <a href="/admin/">{% trans "Home" %}</a> >
+        <a href="/admin/assets/">Asset Admin</a> >
+        <a href="/admin/assets/asset/">Assets</a> >
+        Replace iPad
+    </div>
+{% endblock %}
+
 {% block content %}
 
     <link rel="stylesheet" type="text/css" href="{% static "assets/css/replace_ipad.css" %}">
@@ -66,6 +77,9 @@
         http://blog.stanisla.us/2009/10/28/using-a-formwizard-in-the-django-admin/
         {% endcomment %}
         <h2>Replace {{ object.name }}</h2>
+        <div><span style="font-weight: bold; color: #FF3333;">IMPORTANT:</span><span style="font-weight: bold;"> Check that {{ object.name }} is an iPad before continuing. </span></div>
+
+        <br>
 
         <form id="deviceinfo-form">
             <label for="upload">Upload an iPad .deviceinfo file: </label>
@@ -94,10 +108,10 @@
                     <tr><td>FAR cost:</td><td>{{ object.far_cost }}</td><td>{{ form.far_cost }}{{ form.far_cost.errors }}</tr>
                     <tr><td>Warranty Period:</td><td>{{ object.warranty_period }}</td><td>{{ form.warranty_period }}{{ form.warranty_period.errors }}</td></tr>
                 </table>
-
+                <br>
                 <div id="submit-buttons">
                     <input type="hidden" name="action" value="replace_ipad" />
-                    <input type="submit" name="replace" value="Replace" style="color: #FF3333;" /> {# Add class="default" to look the same as admin #}
+                    <input type="submit" name="replace" value="Replace iPad" style="color: #FF3333;" /> {# Add class="default" to look the same as admin #}
                     <input type="submit" name="cancel" value="Cancel" />
                 </div>
 

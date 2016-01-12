@@ -81,7 +81,7 @@ def comment_asset_changes(instances, versions, revision, **kwargs):
                     # Get friendly field names for the model in question
                     verbose_field = type(instances[0])._meta.get_field_by_name(field)[0].verbose_name
                     if field != 'edited_date':
-                        revision_comment += ", %s: %s > %s" % (verbose_field, past_value, new_value)
+                            revision_comment += ", %s: %s > %s" % (verbose_field, past_value, new_value)
                 else:
                     pass
 

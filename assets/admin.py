@@ -28,11 +28,9 @@ import csv
 
 # TODO appear to be working efficiently
 
-# TODO Integrate django adminactions with reversion
+# TODO Integrate django adminactions mass update with reversion
 
 # TODO Find out how to disable reversion middleware when using object actions
-
-# TODO Find out why revisions aren't being saved for object actions
 
 
 # Inline for displaying asset history on Asset admin page.
@@ -91,7 +89,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
         }
 
 #   For custom change_form template (i.e. override title etc)
-    # change_form_template = 'admin/assets/asset/change_form.html'
+    change_form_template = 'admin/assets/asset/change_form.html'
     change_list_template = 'admin/assets/asset/change_list.html'
 
     form = AssetAdminForm
@@ -117,7 +115,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
 
     # save_on_top = True
     actions = ['decommission', 'deploy', 'return_ict']
-    objectactions = ('replace_ipad', 'decommission', 'return_ict', 'deploy',)
+    objectactions = ('replace_ipad', 'return_ict', 'deploy', 'decommission',)
     inlines = [
         HistoryInline,
     ]
@@ -149,7 +147,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
         urls = super(AssetAdmin, self).get_urls()
         my_urls = patterns('',
             (r'^csvfilter/$', self.admin_site.admin_view(self.csvfilter)),
-            (r'^csvdeploy/$', self.csvdeploy)
+            (r'^csvdeploy/$', self.admin_site.admin_view(self.csvdeploy))
         )
         return my_urls + urls
 
@@ -187,6 +185,32 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
             del actions['export_delete_tree']
 
         return actions
+
+    # Selectively display object actions based on asset state
+    def get_object_actions(self, request, context, **kwargs):
+
+        objectactions = []
+
+        if 'original' in context:
+            asset = context['original']
+
+            if asset is not None:
+                if asset.owner.lower() == 'ict services':
+                    objectactions.extend(['deploy'])
+                else:
+                    if asset.active:
+                        objectactions.extend(['return_ict'])
+
+                if asset.active:
+                    objectactions.extend(['decommission'])
+                else:
+                    model = asset.model.lower()
+                    if 'ipad' in model.split():
+                        objectactions.extend(['replace_ipad'])
+
+
+
+        return objectactions
 
     def csvfilter(self, request):
         """

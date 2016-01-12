@@ -1,14 +1,35 @@
 {% extends "admin/base_site.html" %}
 
+{% load i18n admin_static %}
+
+{% block breadcrumbs %}
+    <div class="breadcrumbs">
+        <a href="/admin/">{% trans "Home" %}</a> >
+        <a href="/admin/assets/">Asset Admin</a> >
+        <a href="/admin/assets/asset/">Assets</a> >
+        Deploy Asset
+    </div>
+{% endblock %}
+
 {% block content %}
     <form action="" method="post">
 
         {% csrf_token %}
 
-        <h2>Deploy Asset</h2>
+        <h2>Deploy Asset(s)</h2>
 
         <div>
-            {{ form }}
+            {% for field in form %}
+                <div class="fieldWrapper">
+                    {{ field.errors }}
+                    {{ field.label_tag }} <br> {{ field }}
+                    {% if field.help_text %}
+                    <p class="help">{{ field.help_text|safe }}</p>
+                    {% endif %}
+                </div>
+                <br>
+            {% endfor %}
+            <br>
             <input type="hidden" name="action" value="deploy" />
             <input type="submit" name="deploy_asset" value="Deploy" style="color: #FF3333;" /> {# Add class="default" to look the same as admin #}
             <input type="submit" name="cancel" value="Cancel" />

@@ -1,21 +1,42 @@
 {% extends "admin/base_site.html" %}
 
+{% load i18n admin_static %}
+
+{% block breadcrumbs %}
+    <div class="breadcrumbs">
+        <a href="/admin/">{% trans "Home" %}</a> >
+        <a href="/admin/assets/">Asset Admin</a> >
+        <a href="/admin/assets/asset/">Assets</a> >
+        Decommission Asset
+    </div>
+{% endblock %}
+
 {% block content %}
     <form action="" method="post">
 
         {% csrf_token %}
 
-        <h2>Decommission Asset</h2>
+        <h2>Decommission Asset(s)</h2>
 
         <div>
-            {{ form }}
+            {% for field in form %}
+                <div class="fieldWrapper">
+                    {{ field.errors }}
+                    {{ field.label_tag }} <br> {{ field }}
+                    {% if field.help_text %}
+                    <p class="help">{{ field.help_text|safe }}</p>
+                    {% endif %}
+                </div>
+                <br>
+            {% endfor %}
+            <br>
             <input type="hidden" name="action" value="decommission" />
             <input type="submit" name="decommission_asset" value="Decommission" style="color: #FF3333;" /> {# Add class="default" to look the same as admin #}
             <input type="submit" name="cancel" value="Cancel" />
         </div>
+        <br>
 
-
-        <p><strong>The following assets will be decommissioned:</strong></p>
+        <p><h3>The following assets will be decommissioned:</h3></p>
         <ul>
             {% for object in objects %}
                 <li>

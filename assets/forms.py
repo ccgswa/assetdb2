@@ -1,5 +1,5 @@
 from django import forms
-from django.forms import ModelForm
+from django.forms import ModelForm, Textarea
 from assets.models import Asset, AssetHistory
 from validators import clean_mac
 
@@ -31,25 +31,31 @@ class AssetDecommissionForm(forms.Form):
     location_choices = (
         ('damaged', 'Damaged'), ('lost', 'Lost or Stolen'), ('disposed', 'Disposed'),
     )
-    location = forms.ChoiceField(label='Incident', widget=forms.RadioSelect, choices=location_choices, initial='damaged')
-    recipient = forms.CharField(label='Recipient', max_length=200)
-    notes = forms.CharField(label='Notes', widget=forms.Textarea)
+    location = forms.ChoiceField(label='Select an incident', widget=forms.RadioSelect, choices=location_choices, initial='damaged')
+    recipient = forms.CharField(label='New location or recipient', max_length=200,
+                                widget=forms.TextInput(attrs={'size': 40}),
+                                help_text="Examples: \'Repair\', \'Disposed\', \'Lost\', \'Geoff\'s house\'.")
+    notes = forms.CharField(label='Additional Notes', widget=forms.Textarea(attrs={'rows': 2, 'cols': 60}),
+                            help_text="Example: \'Processed for repair with Winthrop (cracked screen)\'.")
+
 
 class AssetCSVUploadForm(forms.Form):
-    csvfile = forms.FileField(label='CSVFile')
+    csvfile = forms.FileField(label='CSV File')
 
 class AssetDeploymentForm(forms.Form):
     deploy_choices = (
         ('deploy_student', 'Student'), ('deploy_staff', 'Staff Member'),
     )
     deploy_to = forms.ChoiceField(label='Deploy to', widget=forms.RadioSelect, choices=deploy_choices, initial='deploy_student')
-    recipient = forms.CharField(label='Recipient')
+    recipient = forms.CharField(label='Recipient', widget=forms.TextInput(attrs={'size': 40}),
+                                help_text="For a student include the Student ID <br> "
+                                          "Example: \'Dalton Whittle - 11111\'")
     location_choices = (
         ('ccgs', 'CCGS Main Campus'), ('kooringal', 'Kooringal Campus'), ('none', '--------------------'),
     )
     location = forms.ChoiceField(label='Location', choices=location_choices, initial='ccgs')
-    # exact_location = forms.CharField(label='Year/Dept/Room', max_length=200, required=False)
-    replacing = forms.CharField(label='Replacement for', max_length=200, required=False)
+    replacing = forms.CharField(label='Replacement for (optional)', max_length=200, required=False,
+                                help_text="Enter the previous asset owned by this recipient <br> Example: \'ITE1234\'")
 
 
 class AssetCSVDeploymentForm(forms.Form):
@@ -61,7 +67,7 @@ class AssetCSVDeploymentForm(forms.Form):
         ('ccgs', 'CCGS Main Campus'), ('kooringal', 'Kooringal Campus'), ('none', '--------------------'),
     )
     location = forms.ChoiceField(label='Location', choices=location_choices, initial='ccgs')
-    csvfile = forms.FileField(label='CSVFile')
+    csvfile = forms.FileField(label='CSV File')
 
 class iPadReplacementForm(ModelForm):
 
