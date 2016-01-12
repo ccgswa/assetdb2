@@ -34,7 +34,7 @@ def comment_asset_changes(instances, versions, revision, **kwargs):
 
 
     try:
-        past_version = reversion.get_for_object(instances[0])[0].field_dict
+        past_version = reversion.get_for_object(instances[0])[0].field_dict # Only checks the first object!!
     except IndexError:
         # No previous revisions for object. Therefore object created.
         if isinstance(instances[0], Asset):  # Assumed that all objects in the revision will be of the same type!

@@ -7,9 +7,11 @@ from import_export.admin import ImportExportModelAdmin, ExportActionModelAdmin, 
 from django_object_actions import DjangoObjectActions, takes_instance_or_queryset
 from .forms import *
 from .filters import *
+from .helpers import *
 from django.shortcuts import render
 from django.core.urlresolvers import reverse
 from django.conf.urls import patterns, url
+from django.contrib.admin.views.decorators import staff_member_required
 import reversion
 from .signals import handlers
 import csv
@@ -142,22 +144,14 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
         return HttpResponseRedirect("../%s" % obj.id)
 
     def get_urls(self):
-        """Prepend the URL for csvfilter to the AssetAdmin URLs
+        """Prepend the URL for csvfilter and csvdeploy to the AssetAdmin URLs
         """
         urls = super(AssetAdmin, self).get_urls()
         my_urls = patterns('',
-            (r'^csvfilter/$', self.csvfilter)
+            (r'^csvfilter/$', self.admin_site.admin_view(self.csvfilter)),
+            (r'^csvdeploy/$', self.csvdeploy)
         )
         return my_urls + urls
-
-    def csvfilter(self, request):
-        """
-        A simple view under AssetAdmin that generates and posts a form
-        with a csv file containing a simple list of asset names
-        """
-        form = AssetCSVUploadForm()
-        return render(request, 'admin/assets/csvupload.html',
-                      {'form': form})
 
     def get_queryset(self, request):
         """
@@ -174,6 +168,139 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
                     filterassets.append(line[0])
                 qs = Asset.objects.filter(name__in=filterassets)
         return qs
+
+    def get_actions(self, request):
+        actions = super(AssetAdmin, self).get_actions(request)
+
+        print
+
+        # Delete unwanted actions
+        if 'merge' in actions:
+            del actions['merge']
+        if 'export_as_fixture' in actions:
+            del actions['export_as_fixture']
+        if 'export_as_csv' in actions:
+            del actions['export_as_csv']
+        if 'export_as_xls' in actions:
+            del actions['export_as_xls']
+        if 'export_delete_tree' in actions:
+            del actions['export_delete_tree']
+
+        return actions
+
+    def csvfilter(self, request):
+        """
+        A simple view under AssetAdmin that generates and posts a form
+        with a csv file containing a simple list of asset names
+        """
+        form = AssetCSVUploadForm()
+        return render(request, 'admin/assets/csvupload.html',
+                      {'form': form})
+
+
+    def csvdeploy(self, request):
+        """
+        Takes a csv file containing asset names in the first column and deploys them to the owner
+        in the second column.
+        """
+        if 'cancel' in request.POST:
+            self.message_user(request, 'Mass deployment cancelled.', level=messages.ERROR)
+            return
+
+        elif 'csvdeploy' in request.POST:
+            # Create form object with submitted data
+            form = AssetCSVDeploymentForm(request.POST, request.FILES)
+
+            if form.is_valid():
+
+                f = csv.reader(request.FILES['csvfile'])
+
+                # Prepare message string variables
+                rows_updated = 0
+                currently_inactive = []
+                currently_deployed = []
+                does_not_exist = []
+
+                for row in f:
+                    rows_updated += 1
+
+                    name = row[0]
+                    owner = row[1]
+
+                    try:
+                        asset = Asset.objects.get(name=name)  # Should only return one asset. Names are unique!
+                    except Asset.DoesNotExist:
+                        asset = None
+
+                    # Check for errors before deploying
+                    if asset is None:
+                        does_not_exist.append(name)
+
+                    elif not asset.active:
+                        currently_inactive.append(name)
+
+                    elif asset.owner.lower() != 'ict services':
+                        currently_deployed.append(name)
+
+                    else:  # Deploy away!
+                        deploy_type = ''
+                        if form.cleaned_data['deploy_to'] == 'deploy_staff':
+                            deploy_type = 'staff member'
+                        elif form.cleaned_data['deploy_to'] == 'deploy_student':
+                            deploy_type = 'student'
+                        notes = 'Deployed to %s %s' % (deploy_type, owner)
+                        asset.location = form.cleaned_data['location']
+                        asset.owner = owner
+                        ah = AssetHistory(asset=asset,
+                                          created_by=request.user,
+                                          incident=form.cleaned_data['deploy_to'],
+                                          recipient=owner,
+                                          transfer='internal',
+                                          notes=notes)
+
+                        ah.save()
+
+                        # Disconnect the pre_reversion_commit signal to prevent auto comment
+                        reversion.pre_revision_commit.disconnect(handlers.comment_asset_changes)
+
+                        # Save model changes and create reversion instance
+                        with transaction.atomic(), reversion.create_revision():
+                            asset.save()
+                            reversion.set_user(request.user)
+                            reversion.set_comment('Deployed as part of mass csv deployment.')
+
+                        # Reconnect to the signal
+                        reversion.pre_revision_commit.connect(handlers.comment_asset_changes)
+
+                rows_updated -= len(currently_inactive) + len(currently_deployed) + len(does_not_exist)
+
+                # Construct messages to user
+                if rows_updated == 0:
+                    self.message_user(request, "Could not deploy anything. Check the file for errors.",
+                                      level=messages.ERROR)
+                else:
+                    self.message_user(request, "Number of assets deployed: %s" % rows_updated, level=messages.SUCCESS)
+
+                if len(does_not_exist) > 0:
+                    self.message_user(request, generate_error_string("Not found: ", does_not_exist),
+                                      level=messages.ERROR)
+
+                if len(currently_inactive) > 0:
+                    self.message_user(request,
+                                      generate_error_string("Could not deploy inactive assets: ", currently_inactive),
+                                      level=messages.ERROR)
+
+                if len(currently_deployed) > 0:
+                    self.message_user(request, generate_error_string("Already deployed: ",
+                                                                     currently_deployed), level=messages.ERROR)
+
+                return HttpResponseRedirect(reverse("admin:assets_asset_changelist"))
+
+        else:
+            form = AssetCSVDeploymentForm()
+            return render(request, 'admin/assets/csvdeploy.html',
+                          {'form': form})
+
 
     # Django Admin action to decommission an asset.
     # The django-object-actions decorator makes it available in change_form template.
@@ -338,7 +465,8 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
                         if (currently_inactive == 1 and currently_deployed == 0) or (currently_inactive == 0 and currently_deployed == 1):
                             error_bit += asset.name
                         else:
-                            error_bit += ", %s" % asset.name
+                            if asset.owner.lower() != 'ict services':
+                                error_bit += ", %s" % asset.name
 
                 rows_updated -= currently_inactive + currently_deployed
 
@@ -366,7 +494,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
                         error_bit = " %s has already been deployed to %s." % (asset.name, asset.owner)
                     else:
                         error_bit = " Some assets have already been deployed."
-                    self.message_user(request, "%s You must return assets before deploying again." % error_bit,
+                    self.message_user(request, "%s You must return assets to ICT before deploying again." % error_bit,
                                       level=messages.WARNING)
 
                 return
@@ -562,8 +690,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
                     error_bit += " are inactive."
                 self.message_user(request, "%s Cannot return." % error_bit, level=messages.WARNING)
 
-
-    # Names for django action tools
+    # Descriptions (user friendly names) for Django admin actions
     decommission.short_description = "Decommission selected assets"
     decommission.label = "Decommission"
 
@@ -575,6 +702,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
 
     replace_ipad.short_description = "Replace iPads"
     replace_ipad.label = "Replace iPad"
+
 
 
 # For importing and exporting Asset History data

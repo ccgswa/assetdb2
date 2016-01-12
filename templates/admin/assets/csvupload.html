@@ -7,9 +7,8 @@
 
         {% csrf_token %}
 
-        <h2>Upload Asset Names</h2>
-        <div>* Only accepts a simple list of Asset tags in csv format.</div>
-        <br>
+        <h2>Upload List of Assets to Filter</h2>
+        <div>The list must be a single column csv file containing asset names only.</div><br>
 
         <div>
             {{ form }}
@@ -17,7 +16,8 @@
             <input type="submit" name="csvupload" value="CSV Upload" style="color: #FF3333;" /> {# Add class="default" to look the same as admin #}
             <input type="submit" name="cancel" value="Cancel" />
         </div>
-
+        <br>
+        <div><span style="font-weight: bold; color: #FF3333;">WARNING:</span> Do not upload lists of more than 500 assets. You may accidentally select all active assets!</div>
 
 
     </form>

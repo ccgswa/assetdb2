@@ -52,6 +52,17 @@ class AssetDeploymentForm(forms.Form):
     replacing = forms.CharField(label='Replacement for', max_length=200, required=False)
 
 
+class AssetCSVDeploymentForm(forms.Form):
+    deploy_choices = (
+        ('deploy_student', 'Student'), ('deploy_staff', 'Staff Member'),
+    )
+    deploy_to = forms.ChoiceField(label='Deploy to', widget=forms.RadioSelect, choices=deploy_choices, initial='deploy_student')
+    location_choices = (
+        ('ccgs', 'CCGS Main Campus'), ('kooringal', 'Kooringal Campus'), ('none', '--------------------'),
+    )
+    location = forms.ChoiceField(label='Location', choices=location_choices, initial='ccgs')
+    csvfile = forms.FileField(label='CSVFile')
+
 class iPadReplacementForm(ModelForm):
 
     class Meta:

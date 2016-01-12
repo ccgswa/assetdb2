@@ -1,0 +1,29 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+    <form action="" method="post" enctype="multipart/form-data">
+    {# action=".." in order to force post to reach the get_queryset method under AssetAdmin #}
+    {# must inlcude enctype to support file uploads. See https://docs.djangoproject.com/en/1.9/topics/http/file-uploads/ #}
+
+        {% csrf_token %}
+
+        <h2>Mass Deploy by CSV</h2>
+        <div>The CSV file used must consist of <strong>two columns</strong> only:
+            <ul>
+                <li>The first column with the asset name/tag.</li>
+                <li>The second with new owner.</li>
+            </ul>
+        </div>
+        <br>
+
+        <div>
+            {{ form }}
+            <input type="hidden" name="action" value="csvdeploy" />
+            <input type="submit" name="csvdeploy" value="Mass Deploy" style="color: #FF3333;" /> {# Add class="default" to look the same as admin #}
+            <input type="submit" name="cancel" value="Cancel" />
+        </div>
+
+
+
+    </form>
+{% endblock %}
