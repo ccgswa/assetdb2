@@ -1,0 +1,19 @@
+.decommission-button {
+    background: #f0a198 !important;
+    color: black !important;
+}
+
+.deploy-button {
+    background: #CCCCFF !important;
+    color: black !important;
+}
+
+.return-button{
+    background: #C2FFE0 !important;
+    color: black !important;
+}
+
+.replace-button{
+    background: #ffc58b !important;
+    color: black !important;
+}

@@ -1,6 +1,6 @@
 from django import forms
-from django.forms import ModelForm, Textarea
-from assets.models import Asset, AssetHistory
+from django.forms import ModelForm
+from assets.models import Asset
 from validators import clean_mac
 
 
@@ -48,8 +48,8 @@ class AssetDeploymentForm(forms.Form):
     )
     deploy_to = forms.ChoiceField(label='Deploy to', widget=forms.RadioSelect, choices=deploy_choices, initial='deploy_student')
     recipient = forms.CharField(label='Recipient', widget=forms.TextInput(attrs={'size': 40}),
-                                help_text="For a student include the Student ID <br> "
-                                          "Example: \'Dalton Whittle - 11111\'")
+                                help_text="For a student always include the Student ID <br> "
+                                          "Example: \'Jimmy Jones - 11111\'")
     location_choices = (
         ('ccgs', 'CCGS Main Campus'), ('kooringal', 'Kooringal Campus'), ('none', '--------------------'),
     )

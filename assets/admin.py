@@ -85,7 +85,8 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
     # Insert custom CSS
     class Media:
         css = {
-            'all': ('assets/css/history.css',)
+            'all': ('assets/css/history.css',
+                    'assets/css/object_action_buttons.css')
         }
 
 #   For custom change_form template (i.e. override title etc)
@@ -114,7 +115,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
     # readonly_fields = ('name',) # TODO Make name readonly only on the change_form page. Must be editable on add asset.
 
     # save_on_top = True
-    actions = ['decommission', 'deploy', 'return_ict']
+    actions = ['deploy', 'return_ict','decommission']
     objectactions = ('replace_ipad', 'return_ict', 'deploy', 'decommission',)
     inlines = [
         HistoryInline,
@@ -169,8 +170,6 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
 
     def get_actions(self, request):
         actions = super(AssetAdmin, self).get_actions(request)
-
-        print
 
         # Delete unwanted actions
         if 'merge' in actions:
@@ -287,6 +286,9 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
                         # Disconnect the pre_reversion_commit signal to prevent auto comment
                         reversion.pre_revision_commit.disconnect(handlers.comment_asset_changes)
 
+                        # Set flag to be read by pre_revision_commit handler
+                        asset.flag = 'action'
+
                         # Save model changes and create reversion instance
                         with transaction.atomic(), reversion.create_revision():
                             asset.save()
@@ -366,6 +368,9 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
                         # Disconnect the pre_reversion_commit signal to prevent auto comment
                         reversion.pre_revision_commit.disconnect(handlers.comment_asset_changes)
 
+                        # Set flag to tell pre_revision_commit handler to skip processing
+                        asset.flag = 'action'
+
                         # Save model changes and create reversion instance
                         with transaction.atomic(), reversion.create_revision():
                             asset.save()
@@ -421,6 +426,10 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
         return render(request, 'admin/assets/decommission.html',
                       {'objects': queryset, 'form': form})
 
+    decommission.attrs = {
+        'class': 'decommission-button',
+    }
+
     # Django Admin action to decommission an asset.
     # The django-object-actions decorator makes it available in change_form template.
     @takes_instance_or_queryset
@@ -470,6 +479,9 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
 
                         # Disconnect the pre_reversion_commit signal to prevent auto comment
                         reversion.pre_revision_commit.disconnect(handlers.comment_asset_changes)
+
+                        # Set flag to be read by pre_revision_commit handler
+                        asset.flag = 'action'
 
                         # Save model changes and create reversion instance
                         with transaction.atomic(), reversion.create_revision():
@@ -543,6 +555,10 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
         return render(request, 'admin/assets/deploy.html',
                       {'objects': queryset, 'form': form})
 
+    deploy.attrs = {
+        'class': 'deploy-button',
+    }
+
     @takes_instance_or_queryset
     def replace_ipad(self, request, queryset):
 
@@ -602,6 +618,9 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
                     # Disconnect the pre_reversion_commit signal to prevent auto comment
                     reversion.pre_revision_commit.disconnect(handlers.comment_asset_changes)
 
+                    # Set flag to be read by pre_revision_commit handler
+                    new_asset.flag = 'action'
+
                     # Save model changes and create reversion instance
                     with transaction.atomic(), reversion.create_revision():
                         new_asset.save()
@@ -637,6 +656,10 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
         return render(request, 'admin/assets/replace_ipad.html',
                       {'objects': queryset, 'form': form})
 
+    replace_ipad.attrs = {
+        'class': 'replace-button',
+    }
+
 
     @takes_instance_or_queryset
     def return_ict(self, request, queryset):
@@ -669,6 +692,9 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
 
                     # Disconnect the pre_reversion_commit signal to prevent auto comment
                     reversion.pre_revision_commit.disconnect(handlers.comment_asset_changes)
+
+                    # Set flag to be read by pre_revision_commit handler
+                    asset.flag = 'action'
 
                     # Save model changes and create reversion instance
                     with transaction.atomic(), reversion.create_revision():
@@ -714,6 +740,11 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
                     error_bit += " are inactive."
                 self.message_user(request, "%s Cannot return." % error_bit, level=messages.WARNING)
 
+    return_ict.attrs = {
+        'class': 'return-button',
+    }
+
+
     # Descriptions (user friendly names) for Django admin actions
     decommission.short_description = "Decommission selected assets"
     decommission.label = "Decommission"
@@ -721,7 +752,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
     deploy.short_description = "Deploy selected assets"
     deploy.label = "Deploy"
 
-    return_ict.short_description = "Return selected assets"
+    return_ict.short_description = "Return selected assets to ICT"
     return_ict.label = "Return to ICT"
 
     replace_ipad.short_description = "Replace iPads"
@@ -766,6 +797,25 @@ class AssetHistoryAdmin(reversion.VersionAdmin, ImportExportModelAdmin, ExportAc
         """This makes the response go to the newly added AssetHistory's change page
         without using reverse"""
         return HttpResponseRedirect("../%s" % obj.id)
+
+    def get_actions(self, request):
+        actions = super(AssetHistoryAdmin, self).get_actions(request)
+
+        # Delete unwanted actions
+        if 'merge' in actions:
+            del actions['merge']
+        if 'graph_queryset' in actions:
+            del actions['graph_queryset']
+        if 'export_as_fixture' in actions:
+            del actions['export_as_fixture']
+        if 'export_as_csv' in actions:
+            del actions['export_as_csv']
+        if 'export_as_xls' in actions:
+            del actions['export_as_xls']
+        if 'export_delete_tree' in actions:
+            del actions['export_delete_tree']
+
+        return actions
 
 admin.site.register(Asset, AssetAdmin)
 admin.site.register(AssetHistory, AssetHistoryAdmin)
