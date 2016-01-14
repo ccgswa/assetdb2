@@ -16,21 +16,14 @@ import reversion
 from .signals import handlers
 import csv
 
-
-# TODO Explore further customisations https://docs.djangoproject.com/en/1.8/intro/tutorial02/#customizing-your-application-s-templates
-
 # TODO Add "Edit" button to toggle 'readonly' attribute for certain fields in change_form.
 
 # TODO Find out why Reversion ignores custom saveformset function override
 # https://github.com/etianen/django-reversion/issues/339
 
-# TODO Make replace_ipad appear only on iPad pages
-
 # TODO appear to be working efficiently
 
 # TODO Integrate django adminactions mass update with reversion
-
-# TODO Find out how to disable reversion middleware when using object actions
 
 
 # Inline for displaying asset history on Asset admin page.
@@ -86,7 +79,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
     class Media:
         css = {
             'all': ('assets/css/history.css',
-                    'assets/css/object_action_buttons.css')
+                    'assets/css/object-action-buttons.css')
         }
 
 #   For custom change_form template (i.e. override title etc)
@@ -97,7 +90,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
 
     list_per_page = 500
     search_fields = ['name', 'serial', 'model', 'manufacturer', 'owner', 'wired_mac', 'wireless_mac', 'bluetooth_mac']
-    list_display = ('name', 'model', 'manufacturer',  'owner', 'serial', 'wireless_mac', 'location', 'active', 'purchase_date', 'far_cost')
+    list_display = ('name', 'owner', 'model', 'manufacturer', 'serial', 'wireless_mac', 'location', 'active', 'purchase_date', 'far_cost')
     list_filter = (ActiveListFilter, 'far_asset', ModelListFilter, ManufacturerListFilter, PurchaseYearListFilter)
     fieldsets = (
         (None, {
@@ -112,11 +105,11 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
 
     )
 
-    # readonly_fields = ('name',) # TODO Make name readonly only on the change_form page. Must be editable on add asset.
+    readonly_fields = ('active',)  # TODO Make name readonly only on the change_form page. Must be editable on add asset.
 
     # save_on_top = True
-    actions = ['deploy', 'return_ict','decommission']
-    objectactions = ('replace_ipad', 'return_ict', 'deploy', 'decommission',)
+    actions = ['deploy', 'return_ict', 'decommission', 'reactivate', ]
+    objectactions = ('reactivate', 'return_ict', 'replace_ipad', 'deploy', 'decommission', )
     inlines = [
         HistoryInline,
     ]
@@ -203,6 +196,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
                 if asset.active:
                     objectactions.extend(['decommission'])
                 else:
+                    objectactions.extend(['reactivate'])
                     model = asset.model.lower()
                     if 'ipad' in model.split():
                         objectactions.extend(['replace_ipad'])
@@ -427,10 +421,10 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
                       {'objects': queryset, 'form': form})
 
     decommission.attrs = {
-        'class': 'decommission-button',
+        'class': 'red-button',
     }
 
-    # Django Admin action to decommission an asset.
+    # Django Admin action to deploy assets.
     # The django-object-actions decorator makes it available in change_form template.
     @takes_instance_or_queryset
     def deploy(self, request, queryset):
@@ -440,7 +434,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
             self.message_user(request, 'Deployment cancelled.', level=messages.ERROR)
             return
 
-        # Check that we've submitted the decommission form
+        # Check that we've submitted the form
         elif 'deploy_asset' in request.POST:
             # Create form object with submitted data
             form = AssetDeploymentForm(request.POST)
@@ -535,7 +529,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
 
                 return
 
-        # We've submitted a different form (i.e. change list/form). Go to the decommission form.
+        # We've submitted a different form (i.e. change list/form). Go to the form.
         else:
             if len(queryset) == 1:
                 if not queryset[0].active:
@@ -556,8 +550,189 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
                       {'objects': queryset, 'form': form})
 
     deploy.attrs = {
-        'class': 'deploy-button',
+        'class': 'purple-button',
     }
+
+
+    @takes_instance_or_queryset
+    def return_ict(self, request, queryset):
+
+        # Prepare message string variables
+        rows_updated = len(queryset)
+        currently_inactive = 0
+        already_returned = 0
+        error_bit = ""
+
+        if len(queryset) == 1 and not queryset[0].active:
+            self.message_user(request, "You cannot return an inactive asset.", level=messages.ERROR)
+            return
+        else:
+            for asset in queryset:
+                # TODO Add logic (and appropriate error messaging) for when an asset is already owned by ICT Services
+                if asset.active and asset.owner.lower() != 'ict services':
+                    notes = 'Returned to ICT Services by %s' % asset.owner
+                    asset.location = 'ccgs'
+                    # asset.exact_location = 'ICT Services'
+                    asset.owner = 'ICT Services'
+                    ah = AssetHistory(asset=asset,
+                                      created_by=request.user,
+                                      incident='return',
+                                      recipient='ICT Services',
+                                      transfer='internal',
+                                      notes=notes)
+
+                    ah.save()
+
+                    # Disconnect the pre_reversion_commit signal to prevent auto comment
+                    reversion.pre_revision_commit.disconnect(handlers.comment_asset_changes)
+
+                    # Set flag to be read by pre_revision_commit handler
+                    asset.flag = 'action'
+
+                    # Save model changes and create reversion instance
+                    with transaction.atomic(), reversion.create_revision():
+                        asset.save()
+                        reversion.set_user(request.user)
+                        reversion.set_comment(notes)
+
+                    # Reconnect to the signal
+                    reversion.pre_revision_commit.connect(handlers.comment_asset_changes)
+
+                else:
+                    if not asset.active:
+                        currently_inactive += 1
+                        if currently_inactive == 1:
+                            error_bit += asset.name
+                        else:
+                            error_bit += ", %s" % asset.name
+                    else:
+                        already_returned += 1
+
+            rows_updated -= (currently_inactive + already_returned)
+
+            # Construct message to user based on how many assets were updated
+            if rows_updated == 0:
+                self.message_user(request, "Cannot return inactive assets or assets owned by ICT Services."
+                                  , level=messages.ERROR)
+            else:
+                if rows_updated == 1:
+                    message_bit = "%s was" % queryset[0].name
+                else:
+                    message_bit = "%s assets were" % rows_updated
+                self.message_user(request, "%s returned to ICT Services." % message_bit,
+                                  level=messages.SUCCESS)
+
+                if already_returned > 0:
+                    self.message_user(request, "Some assets were already owned by ICT Services.", level=messages.WARNING)
+
+            # Generate error string
+            if currently_inactive > 0:
+                if currently_inactive == 1:
+                    error_bit += " is inactive."
+                elif currently_inactive > 1:
+                    error_bit += " are inactive."
+                self.message_user(request, "%s Cannot return." % error_bit, level=messages.WARNING)
+
+    return_ict.attrs = {
+        'class': 'green-button',
+        'onclick': 'return confirm("Return this asset to ICT Services?");',
+    }
+
+    # Django Admin action to reactivate a decommissioned asset.
+    # The django-object-actions decorator makes it available in change_form template.
+    @takes_instance_or_queryset
+    def reactivate(self, request, queryset):
+
+        # The user cancelled. Return to the change list.
+        if 'cancel' in request.POST:
+            self.message_user(request, 'Re-activation cancelled.', level=messages.ERROR)
+            return
+
+        # Check that we've submitted the form
+        elif 'reactivate_asset' in request.POST:
+            # Create form object with submitted data
+            form = AssetReactivationForm(request.POST)
+
+            if form.is_valid():
+
+                # Prepare message string variables
+                rows_updated = 0
+                currently_active = []
+
+                # Use validated data to deploy selected assets
+                for asset in queryset:
+                    rows_updated += 1
+
+                    if asset.active:
+                        currently_active.append(asset.name)
+                    else:
+                        notes = 'Asset re-activated. Reason: %s' % (form.cleaned_data['reason'])
+
+                        asset.location = 'ccgs'
+                        asset.owner = 'ICT Services'
+                        asset.active = True
+
+                        ah = AssetHistory(asset=asset,
+                                          created_by=request.user,
+                                          incident='return',
+                                          recipient='ICT Services',
+                                          transfer='incoming',
+                                          notes=notes)
+
+                        ah.save()
+
+                        # Disconnect the pre_reversion_commit signal to prevent auto comment
+                        reversion.pre_revision_commit.disconnect(handlers.comment_asset_changes)
+
+                        # Set flag to be read by pre_revision_commit handler
+                        asset.flag = 'action'
+
+                        # Save model changes and create reversion instance
+                        with transaction.atomic(), reversion.create_revision():
+                            asset.save()
+                            reversion.set_user(request.user)
+                            reversion.set_comment(notes)
+
+                        # Reconnect to the signal
+                        reversion.pre_revision_commit.connect(handlers.comment_asset_changes)
+
+                rows_updated -= len(currently_active)
+
+                # Construct messages to user
+                if rows_updated == 0:
+                    self.message_user(request, "Active assets cannot be reactivated.",
+                                      level=messages.ERROR)
+                else:
+                    if len(queryset) == 1 and rows_updated == 1:
+                        self.message_user(request, "%s was re-activated" % asset.name, level=messages.SUCCESS)
+                    else:
+                        self.message_user(request, "Number of assets reactivated: %s" % rows_updated, level=messages.SUCCESS)
+
+                    if len(currently_active) > 0:
+                        self.message_user(request, generate_error_string("Already active: ", currently_active),
+                                          level=messages.ERROR)
+
+                return
+
+        # We've submitted a different form (i.e. change list/form). Go to the form.
+        else:
+            if len(queryset) == 1:
+                if queryset[0].active:
+                    self.message_user(request, "This asset is already active.",
+                                      level=messages.ERROR)
+                    return
+
+            # Create a new deployment form
+            form = AssetReactivationForm()
+
+            # Render the empty form on a new page passing selected assets and form object fields as dictionaries
+            return render(request, 'admin/assets/reactivate.html',
+                          {'objects': queryset, 'form': form})
+
+    reactivate.attrs = {
+        'class': 'green-button',
+    }
+
 
     @takes_instance_or_queryset
     def replace_ipad(self, request, queryset):
@@ -657,91 +832,7 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
                       {'objects': queryset, 'form': form})
 
     replace_ipad.attrs = {
-        'class': 'replace-button',
-    }
-
-
-    @takes_instance_or_queryset
-    def return_ict(self, request, queryset):
-
-        # Prepare message string variables
-        rows_updated = len(queryset)
-        currently_inactive = 0
-        already_returned = 0
-        error_bit = ""
-
-        if len(queryset) == 1 and not queryset[0].active:
-            self.message_user(request, "You cannot return an inactive asset.", level=messages.ERROR)
-            return
-        else:
-            for asset in queryset:
-                # TODO Add logic (and appropriate error messaging) for when an asset is already owned by ICT Services
-                if asset.active and asset.owner.lower() != 'ict services':
-                    notes = 'Returned to ICT Services by %s' % asset.owner
-                    asset.location = 'ccgs'
-                    # asset.exact_location = 'ICT Services'
-                    asset.owner = 'ICT Services'
-                    ah = AssetHistory(asset=asset,
-                                      created_by=request.user,
-                                      incident='return',
-                                      recipient='ICT Services',
-                                      transfer='internal',
-                                      notes=notes)
-
-                    ah.save()
-
-                    # Disconnect the pre_reversion_commit signal to prevent auto comment
-                    reversion.pre_revision_commit.disconnect(handlers.comment_asset_changes)
-
-                    # Set flag to be read by pre_revision_commit handler
-                    asset.flag = 'action'
-
-                    # Save model changes and create reversion instance
-                    with transaction.atomic(), reversion.create_revision():
-                        asset.save()
-                        reversion.set_user(request.user)
-                        reversion.set_comment(notes)
-
-                    # Reconnect to the signal
-                    reversion.pre_revision_commit.connect(handlers.comment_asset_changes)
-
-                else:
-                    if not asset.active:
-                        currently_inactive += 1
-                        if currently_inactive == 1:
-                            error_bit += asset.name
-                        else:
-                            error_bit += ", %s" % asset.name
-                    else:
-                        already_returned += 1
-
-            rows_updated -= (currently_inactive + already_returned)
-
-            # Construct message to user based on how many assets were updated
-            if rows_updated == 0:
-                self.message_user(request, "Cannot return inactive assets or assets owned by ICT Services."
-                                  , level=messages.ERROR)
-            else:
-                if rows_updated == 1:
-                    message_bit = "%s was" % queryset[0].name
-                else:
-                    message_bit = "%s assets were" % rows_updated
-                self.message_user(request, "%s returned to ICT Services." % message_bit,
-                                  level=messages.SUCCESS)
-
-                if already_returned > 0:
-                    self.message_user(request, "Some assets were already owned by ICT Services.", level=messages.WARNING)
-
-            # Generate error string
-            if currently_inactive > 0:
-                if currently_inactive == 1:
-                    error_bit += " is inactive."
-                elif currently_inactive > 1:
-                    error_bit += " are inactive."
-                self.message_user(request, "%s Cannot return." % error_bit, level=messages.WARNING)
-
-    return_ict.attrs = {
-        'class': 'return-button',
+        'class': 'orange-button',
     }
 
 
@@ -758,6 +849,8 @@ class AssetAdmin(DjangoObjectActions, reversion.VersionAdmin, ExportActionModelA
     replace_ipad.short_description = "Replace iPads"
     replace_ipad.label = "Replace iPad"
 
+    reactivate.short_description = "Re-activate selected assets"
+    reactivate.label = "Re-activate"
 
 
 # For importing and exporting Asset History data

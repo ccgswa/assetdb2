@@ -61,7 +61,21 @@ class Asset(models.Model):
     far_asset = models.BooleanField('FAR Asset', default=False)
     far_cost = models.CharField(max_length=200, blank=True)
     ed_cost = models.CharField('Educational Cost', max_length=200, blank=True)
-    warranty_period = models.CharField(max_length=200, blank=True)
+    WARRANTY_CHOICES = (
+        ('none', 'none'),
+        ('1', '1 year'),
+        ('2', '2 years'),
+        ('3', '3 years'),
+        ('4', '4 years'),
+        ('5', '5 years'),
+        ('6', '6 years'),
+        ('7', '7 years'),
+        ('8', '8 years'),
+        ('9', '9 years'),
+        ('10', '10 years'),
+        ('Lifetime', 'Lifetime')
+    )
+    warranty_period = models.CharField(max_length=200, choices=WARRANTY_CHOICES, default='none')
     ip_address = models.CharField(max_length=200, blank=True)
     active = models.BooleanField(default=True)
     invoices = models.CharField(max_length=200, blank=True)

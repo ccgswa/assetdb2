@@ -7,21 +7,6 @@ from django.contrib.auth.models import User
 from django import forms
 
 
-@receiver(adminaction_end)
-def handle_mass_update(action, queryset, form, sender, **kwargs):
-    """
-    Handler to create a revision when the adminactions mass_update function is used
-    Incomplete. Testing phase only.
-    """
-
-    if action == 'mass_update':
-        for item in queryset:
-            print item
-        print type(form)
-        for field in form.cleaned_data:
-            print field
-
-
 # Reversion signals should not be invoked with the 'sender' attribute
 @receiver(reversion.pre_revision_commit)
 def comment_asset_changes(instances, versions, revision, **kwargs):

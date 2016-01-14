@@ -19,10 +19,10 @@
         {% csrf_token %}
 
         <h2>Mass Deploy by CSV</h2>
-        <div>The CSV file used must consist of <strong>two columns</strong> only:
+        <div>The CSV file must consist of <strong>two columns.</strong> All other columns will be ignored:
             <ul>
-                <li>The first column with the asset name/tag.</li>
-                <li>The second with new owner.</li>
+                <li>The <strong>first column</strong> with the <strong>asset name/tag.</strong></li>
+                <li>The <strong>second</strong> with the <strong>new owner</strong>.</li>
             </ul>
         </div>
         <br>

@@ -19,7 +19,7 @@
         {% csrf_token %}
 
         <h2>Filter by CSV</h2>
-        <div><span style="font-weight: bold;">Important:</span> The csv file must contain a single column list of asset tags/names only.</div><br>
+        <div>The first column of the csv file must only contain asset tags/names. All other columns will be ignored.</div><br>
 
         <div>
             {{ form }}

@@ -48,14 +48,20 @@ class AssetDeploymentForm(forms.Form):
     )
     deploy_to = forms.ChoiceField(label='Deploy to', widget=forms.RadioSelect, choices=deploy_choices, initial='deploy_student')
     recipient = forms.CharField(label='Recipient', widget=forms.TextInput(attrs={'size': 40}),
-                                help_text="For a student always include the Student ID <br> "
-                                          "Example: \'Jimmy Jones - 11111\'")
+                                help_text="You must include the student ID when deploying to a student.<br> "
+                                          "Format: \'Jimmy Jones - 11111\'")
     location_choices = (
         ('ccgs', 'CCGS Main Campus'), ('kooringal', 'Kooringal Campus'), ('none', '--------------------'),
     )
     location = forms.ChoiceField(label='Location', choices=location_choices, initial='ccgs')
     replacing = forms.CharField(label='Replacement for (optional)', max_length=200, required=False,
                                 help_text="Enter the previous asset owned by this recipient <br> Example: \'ITE1234\'")
+
+
+class AssetReactivationForm(forms.Form):
+    reason = forms.CharField(label='Reason', widget=forms.Textarea(attrs={'rows': 2, 'cols': 60}),
+                             help_text="Example: Rejected by repairer. Still functional. "
+                                       "Asset returned to ICT for re-purposing.")
 
 
 class AssetCSVDeploymentForm(forms.Form):

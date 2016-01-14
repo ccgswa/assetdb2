@@ -1,19 +1,19 @@
-.decommission-button {
+.red-button {
     background: #f0a198 !important;
     color: black !important;
 }
 
-.deploy-button {
+.purple-button {
     background: #CCCCFF !important;
     color: black !important;
 }
 
-.return-button{
+.green-button {
     background: #C2FFE0 !important;
     color: black !important;
 }
 
-.replace-button{
+.orange-button {
     background: #ffc58b !important;
     color: black !important;
 }
